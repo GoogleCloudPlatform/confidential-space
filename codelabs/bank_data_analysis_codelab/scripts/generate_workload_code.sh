@@ -12,12 +12,12 @@ cat << 'EOF' > ${PARENT_DIR}/src/workload.go
 package main
 
 import (
-"bytes"
+  "bytes"
   "context"
+	"errors"
   "encoding/csv"
   "fmt"
   "hash/crc32"
-  "io/ioutil"
   "os"
   "regexp"
   "strings"
@@ -153,10 +153,10 @@ func writeErrorToBucket(outputWriter *storage.Writer, outputBucket, outputPath s
 	// Writes errors reading in protected data to the results bucket.
 	// This becomes relevant when demonstrating the failure case.
 	if _, err = outputWriter.Write([]byte(fmt.Sprintf("Error reading in protected data: %v", err))); err != nil {
-		glog.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
+		logger.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
 	}
 	if err = outputWriter.Close(); err != nil {
-		glog.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
+		logger.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
 	}
 }
 
@@ -170,7 +170,7 @@ func (*countLocationCmd) Usage() string {
 func (*countLocationCmd) SetFlags(_ *flag.FlagSet) {}
 func (*countLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if f.NArg() != 2 {
-		glog.Errorf("Not enough arguments (expected location and output object URI)")
+		logger.Errorf("Not enough arguments (expected location and output object URI)")
 		return subcommands.ExitUsageError
 	}
 
@@ -178,14 +178,14 @@ func (*countLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...inte
 	re := regexp.MustCompile("gs://([^/]*)/(.*)")
 	matches := re.FindStringSubmatch(outputURI)
 	if matches == nil || matches[0] != outputURI || len(matches) != 3 {
-		glog.Errorf("Second argument should be in the format gs://bucket/object")
+		logger.Errorf("Second argument should be in the format gs://bucket/object")
 		return subcommands.ExitUsageError
 	}
 	outputBucket := matches[1]
 	outputPath := matches[2]
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		glog.Errorf("Error creating storage client with application default credentials: %v", err)
+		logger.Errorf("Error creating storage client with application default credentials: %v", err)
 		return subcommands.ExitFailure
 	}
 	outputWriter := client.Bucket(outputBucket).Object(outputPath).NewWriter(ctx)
@@ -196,10 +196,10 @@ func (*countLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...inte
 		// This becomes relevant when demonstrating the failure case.
 		_, err = outputWriter.Write([]byte(fmt.Sprintf("Error reading in Primus Bank data: %v", err)))
 		if err != nil {
-			glog.Errorf("Could not write to %v: %v", outputURI, err)
+			logger.Errorf("Could not write to %v: %v", outputURI, err)
 		}
 		if err = outputWriter.Close(); err != nil {
-			glog.Errorf("Could not write to %v: %v", outputURI, err)
+			logger.Errorf("Could not write to %v: %v", outputURI, err)
 		}
 		return subcommands.ExitFailure
 	}
@@ -218,12 +218,12 @@ func (*countLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...inte
 
 	_, err = outputWriter.Write([]byte(fmt.Sprintf("%d", count)))
 	if err != nil {
-		glog.Errorf("Could not write to %v: %v", outputURI, err)
+		logger.Errorf("Could not write to %v: %v", outputURI, err)
 		return subcommands.ExitFailure
 	}
 
 	if err = outputWriter.Close(); err != nil {
-		glog.Errorf("Could not write to %v: %v", outputURI, err)
+		logger.Errorf("Could not write to %v: %v", outputURI, err)
 		return subcommands.ExitFailure
 	}
 
@@ -263,7 +263,7 @@ func (*listCommonCustomersCmd) Usage() string {
 func (*listCommonCustomersCmd) SetFlags(_ *flag.FlagSet) {}
 func (*listCommonCustomersCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if f.NArg() != 1 {
-		glog.Errorf("Not enough arguments (output object URI)")
+		logger.Errorf("Not enough arguments (output object URI)")
 		return subcommands.ExitUsageError
 	}
 
@@ -272,14 +272,14 @@ func (*listCommonCustomersCmd) Execute(ctx context.Context, f *flag.FlagSet, _ .
 	outputURI := f.Arg(0)
 	outputMatches := re.FindStringSubmatch(outputURI)
 	if outputMatches == nil || outputMatches[0] != outputURI || len(outputMatches) != 3 {
-		glog.Errorf("Fifth argument should be in the format gs://bucket/object")
+		logger.Errorf("Fifth argument should be in the format gs://bucket/object")
 		return subcommands.ExitUsageError
 	}
 	outputBucket := outputMatches[1]
 	outputPath := outputMatches[2]
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		glog.Errorf("Error creating storage client with application default credentials: %v", err)
+		logger.Errorf("Error creating storage client with application default credentials: %v", err)
 		return subcommands.ExitFailure
 	}
 	outputWriter := client.Bucket(outputBucket).Object(outputPath).NewWriter(ctx)
@@ -310,12 +310,12 @@ func (*listCommonCustomersCmd) Execute(ctx context.Context, f *flag.FlagSet, _ .
 	}
 	_, err = outputWriter.Write([]byte(result))
 	if err != nil {
-		glog.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
+		logger.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
 		return subcommands.ExitFailure
 	}
 
 	if err = outputWriter.Close(); err != nil {
-		glog.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
+		logger.Errorf("Could not write to gs://%v/%v: %v", outputBucket, outputPath, err)
 		return subcommands.ExitFailure
 	}
 
