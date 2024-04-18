@@ -1,0 +1,7 @@
+tensorflow==2.13.0
+tensorflow_hub==0.12.0
+google-cloud-storage==1.42.3
+google-cloud-kms==2.21.1
+numpy>=1.23.5
+Pillow==10.0.0
+protobuf==3.20.*
