@@ -4,7 +4,7 @@
 
 RANDOM_STRING=$(tr -dc a-z </dev/urandom | head -c 4)
 
-# TODO: Fill in UWear and USleep Project IDs
+# TODO: Populate UWear and USleep Project IDs
 # export UWEAR_PROJECT_ID=your-uwear-project-id
 # export USLEEP_PROJECT_ID=your-usleep-project-id
 
