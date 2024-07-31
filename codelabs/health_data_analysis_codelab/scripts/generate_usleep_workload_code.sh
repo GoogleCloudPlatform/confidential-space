@@ -2,7 +2,12 @@
 
 PARENT_DIR=$(dirname ${PWD})
 
-cat << 'EOF' > ${PARENT_DIR}/src/workload.go
+source config_env.sh
+source common.sh
+
+set_gcp_project ${USLEEP_PROJECT_ID}
+
+cat << 'EOF' > ${PARENT_DIR}/src/usleep/workload.go
 // Simple workload to analyze health data securely.
 // Sets up a websocket server to receive health data from UWEAR.
 // Requests a custom token from the Attestation service.
@@ -74,7 +79,7 @@ func getCustomToken(nonce string) ([]byte, error) {
 	// token IPC endpoint
 	url := tokenEndpoint
 	body := fmt.Sprintf(`{
-		"audience": "https://tlstesting.com",
+		"audience": "https://uwear.com",
 		"nonces": ["%s"],
 		"token_type": "PKI"
 	}`, nonce)
