@@ -38,8 +38,8 @@ import (
 )
 
 const (
-	mySensitiveDataFile = "./mysensitivedata"
-	rootCertificateFile = "./rootCertificate.pem"
+	mySensitiveDataFile = "./phi_sleep_data"
+	rootCertificateFile = "./confidential_space_root.pem"
 	ipAddrEnvVar        = "remote_ip_addr"
 	opaPolicy           = `
 	package confidential_space
@@ -321,7 +321,7 @@ func retrieveTokenAndEKMFromConn(conn *websocket.Conn) (string, string, error) {
 
 // ValidateClaimsAgainstOPAPolicy validates the claims in the JWT token against the OPA policy.
 func ValidateClaimsAgainstOPAPolicy(token jwt.Token, ekm string) error {
-	data, err := os.ReadFile("client_baseline.json")
+	data, err := os.ReadFile("opa_validation_values.json")
 	authorized, err := EvaluateOPAPolicy(context.Background(), token, ekm, string(data))
 	if err != nil {
 		fmt.Println("Error evaluating OPA policy:", err)
