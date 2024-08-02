@@ -1,13 +1,13 @@
 #!/bin/bash
 
-PARENT_DIR=$(dirname ${PWD})
+PARENT_DIR=$(dirname "${PWD}")
 
 source config_env.sh
 source common.sh
 
-set_gcp_project ${USLEEP_PROJECT_ID}
+set_gcp_project "${USLEEP_PROJECT_ID}"
 
-cat << 'EOF' > ${PARENT_DIR}/src/usleep/workload.go
+cat << 'EOF' > "${PARENT_DIR}"/src/usleep/workload.go
 // Simple workload to analyze health data securely.
 // Sets up a websocket server to receive health data from UWEAR.
 // Requests a custom token from the Attestation service.

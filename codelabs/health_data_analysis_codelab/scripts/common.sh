@@ -23,7 +23,7 @@ err() {
 #######################################
 set_gcp_project() {
   echo "Setting project to ${1} ..."
-  gcloud config set project ${1} > /dev/null
+  gcloud config set project "${1}" > /dev/null
   if [[ $? -eq 0 ]]; then
     echo "Project is set to ${1} successfully."
   else
@@ -40,12 +40,12 @@ set_gcp_project() {
 #   Name of the service-account
 #######################################
 create_service_account() {
-  gcloud iam service-accounts list | grep ${1}
+  gcloud iam service-accounts list | grep "${1}"
   if [[ $? -eq 0 ]]; then
     echo "Service-account ${1} already exists. Skipping the create of new service-account ..."
   else
     echo "Creating service-account ${1} ..."
-    gcloud iam service-accounts create ${1}
+    gcloud iam service-accounts create "${1}"
     if [[ $? -eq 0 ]]; then
       echo "Service-account ${1} is created successfully."
     else
@@ -62,10 +62,10 @@ create_service_account() {
 #   Name of the service-account
 #######################################
 delete_service_account() {
-  gcloud iam service-accounts list | grep ${1}
+  gcloud iam service-accounts list | grep "${1}"
   if [[ $? -eq 0 ]]; then
     echo "Deleting service-account ${1}..."
-    gcloud iam service-accounts delete ${1} --quiet
+    gcloud iam service-accounts delete "${1}" --quiet
     if [[ $? -eq 0 ]]; then
       echo "Service-account ${1} is deleted successfully."
     else
@@ -85,12 +85,12 @@ delete_service_account() {
 #   Location of artifact repository
 #######################################
 create_artifact_repository() {
-  gcloud artifacts repositories list --location=${2} | grep ${1}
+  gcloud artifacts repositories list --location="${2}" | grep "${1}"
   if [[ $? -eq 0 ]]; then
     echo "Artifact Registry ${1} already exists. Skipping the creation of new artifact registry ..."
   else
     echo "Creating new artifact registry ${1} ..."
-    gcloud artifacts repositories create ${1} --repository-format=docker --location=${2}
+    gcloud artifacts repositories create "${1}" --repository-format=docker --location="${2}"
     if [[ $? -eq 0 ]]; then
       echo "Artifact registry ${1} is created successfully."
     else

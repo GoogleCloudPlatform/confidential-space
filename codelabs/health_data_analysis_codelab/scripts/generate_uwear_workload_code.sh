@@ -1,13 +1,13 @@
 #!/bin/bash
 
-PARENT_DIR=$(dirname ${PWD})
+PARENT_DIR=$(dirname "${PWD}")
 
 source config_env.sh
 source common.sh
 
-set_gcp_project ${UWEAR_PROJECT_ID}
+set_gcp_project "${UWEAR_PROJECT_ID}"
 
-cat << 'EOF' > ${PARENT_DIR}/src/uwear/workload.go
+cat << 'EOF' > "${PARENT_DIR}"/src/uwear/workload.go
 // Simple workload that connects to a TLS session. 
 // Receives a token via the session
 // Validates the PKI token is signed by Google.
