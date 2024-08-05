@@ -24,7 +24,7 @@ delete_UWEAR_resources() {
   set_gcp_project "${UWEAR_PROJECT_ID}"
   delete_artifact_repository "${UWEAR_ARTIFACT_REPOSITORY}" "${UWEAR_PROJECT_REPOSITORY_REGION}"
 
-  gcloud compute instances delete uwear --zone us-west1-b
+  gcloud compute instances delete uwear --zone "${UWEAR_PROJECT_ZONE}"
 
   delete_service_account "${UWEAR_WORKLOAD_SERVICE_ACCOUNT}"@"${UWEAR_PROJECT_ID}".iam.gserviceaccount.com
 }
@@ -49,7 +49,7 @@ delete_USLEEP_resources() {
   set_gcp_project "${USLEEP_PROJECT_ID}"
   delete_artifact_repository "${USLEEP_ARTIFACT_REPOSITORY}" "${USLEEP_PROJECT_REPOSITORY_REGION}"
 
-  gcloud compute instances delete usleep --zone us-west1-b
+  gcloud compute instances delete usleep --zone "${USLEEP_PROJECT_ZONE}"
 
   delete_service_account "${USLEEP_WORKLOAD_SERVICE_ACCOUNT}"@"${USLEEP_PROJECT_ID}".iam.gserviceaccount.com
 }
