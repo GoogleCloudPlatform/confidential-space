@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#Common variables
+
+# TODO: Populate UWear and USleep Project IDs
+# export UWEAR_PROJECT_ID=your-uwear-project-id
+# export USLEEP_PROJECT_ID=your-usleep-project-id
+
+# UWEAR project related variables
+export UWEAR_PROJECT_REGION=${UWEAR_PROJECT_REGION:-'us-west1'}
+export UWEAR_PROJECT_ZONE=${UWEAR_PROJECT_ZONE:-'us-west1-b'}
+export UWEAR_PROJECT_LOCATION=${UWEAR_PROJECT_LOCATION:-'global'}
+
+# USLEEP project related variables
+export USLEEP_PROJECT_REGION=${USLEEP_PROJECT_REGION:-'us-west1'}
+export USLEEP_PROJECT_ZONE=${USLEEP_PROJECT_ZONE:-'us-west1-b'}
+export USLEEP_PROJECT_LOCATION=${USLEEP_PROJECT_LOCATION:-'global'}
+
+# UWEAR resource related variables
+export UWEAR_ARTIFACT_REPOSITORY=${UWEAR_ARTIFACT_REPOSITORY:-${UWEAR_PROJECT_ID}-artifact-repo}
+export UWEAR_PROJECT_REPOSITORY_REGION=${UWEAR_PROJECT_REPOSITORY_REGION:-'us'}
+
+# USLEEP resource related variables
+export USLEEP_ARTIFACT_REPOSITORY=${USLEEP_ARTIFACT_REPOSITORY:-${USLEEP_PROJECT_ID}-artifact-repo}
+export USLEEP_PROJECT_REPOSITORY_REGION=${USLEEP_PROJECT_REPOSITORY_REGION:-'us'}
+
+# UWEAR Workload related variables
+export UWEAR_WORKLOAD_SERVICE_ACCOUNT=${UWEAR_WORKLOAD_SERVICE_ACCOUNT:-workload-sa}
+export UWEAR_WORKLOAD_IMAGE_NAME=${UWEAR_WORKLOAD_IMAGE_NAME:-workload-container}
+export UWEAR_WORKLOAD_IMAGE_TAG=${UWEAR_WORKLOAD_IMAGE_TAG:-latest}
+
+# USLEEP Workload related variables
+export USLEEP_WORKLOAD_SERVICE_ACCOUNT=${USLEEP_WORKLOAD_SERVICE_ACCOUNT:-workload-sa}
+export USLEEP_WORKLOAD_IMAGE_NAME=${USLEEP_WORKLOAD_IMAGE_NAME:-workload-container}
+export USLEEP_WORKLOAD_IMAGE_TAG=${USLEEP_WORKLOAD_IMAGE_TAG:-latest}

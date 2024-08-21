@@ -1,0 +1,15 @@
+{
+  "name": "Amy",
+  "age": 29,
+  "sleep": {
+      "light": {
+          "minutes": 270
+      },
+      "deep": {
+          "minutes": 135
+      },
+      "rem": {
+          "minutes": 105
+      }
+  }
+}
