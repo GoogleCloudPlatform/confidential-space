@@ -18,9 +18,9 @@ import (
 	"net/http"
 	"strings"
 
-	"google3/third_party/golang/go_net/http2/http2"
+	"golang.org/x/net/http2"
 
-	"google3/third_party/golang/gorilla/websocket/websocket"
+	"github.com/gorilla/websocket"
 )
 
 var (

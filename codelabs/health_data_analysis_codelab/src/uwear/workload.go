@@ -18,13 +18,13 @@ import (
 	"os"
 	"time"
 
-	"google3/third_party/golang/jwt/jwt"
+	"github.com/golang-jwt/jwt"
 
-	"google3/third_party/golang/gorilla/websocket/websocket"
+	"github.com/gorilla/websocket"
 
-	"google3/third_party/golang/opa/rego"
-	"google3/third_party/golang/opa/storage/inmem"
-	"google3/third_party/golang/opa/util"
+	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/storage/inmem"
+	"github.com/open-policy-agent/opa/util"
 )
 
 const (
