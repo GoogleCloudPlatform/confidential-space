@@ -89,9 +89,9 @@ func validatePKIToken(attestationToken string) (jwt.Token, error) {
 		return jwt.Token{}, fmt.Errorf("readFile(%v) - failed to read root certificate: %w", rootCertificateFile, err)
 	}
 
-	storedRootCert, err := decodeAndParseCertificate(string(rawRootCertificate))
+	storedRootCert, err := decodeAndParsePEMCertificate(string(rawRootCertificate))
 	if err != nil {
-		return jwt.Token{}, fmt.Errorf("DecodeAndParseCertificate(string) - failed to decode and parse root certificate: %w", err)
+		return jwt.Token{}, fmt.Errorf("DecodeAndParsePEMCertificate(string) - failed to decode and parse root certificate: %w", err)
 	}
 
 	jwtHeaders, err := extractJWTHeaders(attestationToken)
@@ -182,19 +182,19 @@ func extractCertificatesFromX5CHeader(x5cHeaders []any) (CertificateChain, error
 		return CertificateChain{}, fmt.Errorf("not enough certificates in x5c header, expected 3 certificates, but got %v", len(x5c))
 	}
 
-	leafCert, err := decodeAndParseCertificate(x5c[0])
+	leafCert, err := decodeAndParseDERCertificate(x5c[0])
+	if err != nil {
+		return CertificateChain{}, fmt.Errorf("cannot parse leaf certificate: %v", err)
+	}
+
+	intermediateCert, err := decodeAndParseDERCertificate(x5c[1])
 	if err != nil {
 		return CertificateChain{}, fmt.Errorf("cannot parse intermediate certificate: %v", err)
 	}
 
-	intermediateCert, err := decodeAndParseCertificate(x5c[1])
+	rootCert, err := decodeAndParseDERCertificate(x5c[2])
 	if err != nil {
-		return CertificateChain{}, fmt.Errorf("cannot parse intermediate certificate: %v", err)
-	}
-
-	rootCert, err := decodeAndParseCertificate(x5c[2])
-	if err != nil {
-		return CertificateChain{}, fmt.Errorf("cannot parse intermediate certificate: %v", err)
+		return CertificateChain{}, fmt.Errorf("cannot parse root certificate: %v", err)
 	}
 
 	certificates := CertificateChain{
@@ -205,16 +205,28 @@ func extractCertificatesFromX5CHeader(x5cHeaders []any) (CertificateChain, error
 	return certificates, nil
 }
 
-// decodeAndParseCertificate decodes the given PEM certificate string and parses it into an x509 certificate.
-func decodeAndParseCertificate(certificate string) (*x509.Certificate, error) {
+// decodeAndParseDERCertificate decodes the given DER certificate string and parses it into an x509 certificate.
+func decodeAndParseDERCertificate(certificate string) (*x509.Certificate, error) {
+	bytes, _ := base64.StdEncoding.DecodeString(certificate)
+
+	cert, err := x509.ParseCertificate(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse certificate: %v", err)
+	}
+
+	return cert, nil
+}
+
+// decodeAndParsePEMCertificate decodes the given PEM certificate string and parses it into an x509 certificate.
+func decodeAndParsePEMCertificate(certificate string) (*x509.Certificate, error) {
 	block, _ := pem.Decode([]byte(certificate))
 	if block == nil {
-		return nil, fmt.Errorf("cannot decode leaf certificate")
+		return nil, fmt.Errorf("cannot decode certificate")
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse leaf certificate: %v", err)
+		return nil, fmt.Errorf("cannot parse certificate: %v", err)
 	}
 
 	return cert, nil
