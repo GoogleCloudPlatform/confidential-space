@@ -225,7 +225,7 @@ delete_workload_identity_pool() {
   gcloud iam workload-identity-pools list --filter="state=(ACTIVE)" --location=${2} | grep ${1}
   if [[ $? -eq 0 ]]; then
     echo "Deleting workload-idenity-pool ${1}..."
-    gcloud iam workload-identity-pools delete ${1} --location==${2} --quiet
+    gcloud iam workload-identity-pools delete ${1} --location=${2} --quiet
     if [[ $? -eq 0 ]]; then
       echo "Workload identity pool ${1} is deleted successfully."
     else
@@ -280,4 +280,58 @@ delete_artifact_repository() {
   else
     echo "Artifact repository ${1} doesn't exist. Skipping the deletion of ${1}..."
   fi
+}
+
+#######################################
+# Deletes the Virtual Machine.
+# Globals:
+#   None
+# Arguments:
+#   Name of VM
+#   Zone of VM
+#   Project ID under which VM was created
+#######################################
+delete_vm() {
+  gcloud compute instances list --project ${3} | grep ${1}
+  if [[ $? -eq 0 ]]; then
+    echo "Deleting the workload VM ${1}..."
+    gcloud compute instances delete ${1} --zone ${2} --quiet
+    if [[ $? -eq 0 ]]; then
+      echo "Workload VM ${1} is deleted successfully."
+    else
+      err "Failed to delete workload VM ${1}."
+    fi
+  else
+    echo "Workload VM ${1} doesn't exist in zone ${2}. Skipping the deletion of workload VM ${1} ..."
+  fi
+}
+
+
+#######################################
+# Function to get confirmation for given message.
+# Globals:
+#   None
+# Arguments:
+#   Confirmation message
+#######################################
+get_confirmation() {
+  local confirmation_message="$1"
+  local confirmed=false
+
+  while true; do
+    read -p "${confirmation_message} (yes/no)" answer
+    case $answer in
+      [Yy]*)
+        confirmed=true
+        break
+        ;;
+      [Nn]*)
+        confirmed=false
+        break
+        ;;
+      *) echo "Please answer yes or no.";;
+    esac
+  done
+
+  echo "$confirmed"
 }
