@@ -14,6 +14,20 @@ const (
 	// CosEventType indicates the CELR event is a COS content
 	// TODO: the value needs to be reserved in the CEL spec
 	CosEventType uint8 = 80
+	// CosEventPCR is the PCR which should be used for CosEventType events.
+	CosEventPCR = 13
+	// CosRTMR is the RTMR to be extended for COS events
+	// According to https://uefi.org/specs/UEFI/2.10/38_Confidential_Computing.html
+	// CCELMRIndex      TDX Register
+	// 0                   MRTD
+	// 1                   RTMR[0]
+	// 2                   RTMR[1]
+	// 3                   RTMR[2]
+	// So:
+	// 4                   RTMR[3]
+	CosRTMR = 3
+	// CosCCELMRIndex is the CCMR index to use in eventlog for COS events.
+	CosCCELMRIndex = 4
 )
 
 // CosType represent a COS content type in a CEL record content.
