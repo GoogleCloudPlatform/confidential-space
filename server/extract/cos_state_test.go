@@ -5,14 +5,16 @@ import (
 	"testing"
 
 	"github.com/google/confidential-space/server/coscel"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-configfs-tsm/configfs/fakertmr"
 	"github.com/google/go-eventlog/cel"
 	"github.com/google/go-tdx-guest/rtmr"
 	attestpb "github.com/google/go-tpm-tools/proto/attest"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
-func TestVerifiedCosState(t *testing.T) {
-	cos_event_log := &cel.CEL{}
+func TestVerifiedCosStateRTMR(t *testing.T) {
+	cos_event_log := cel.NewConfComputeMR()
 
 	// add events
 	testCELEvents := []struct {
@@ -40,18 +42,18 @@ func TestVerifiedCosState(t *testing.T) {
 	expectedEnvVars["baz"] = "foo=bar"
 	expectedEnvVars["empty"] = ""
 
-	// wantContainerState := attestpb.ContainerState{
-	// 	ImageReference: string(testCELEvents[0].eventPayload),
-	// 	ImageDigest:    string(testCELEvents[1].eventPayload),
-	// 	RestartPolicy:  attestpb.RestartPolicy_Always,
-	// 	ImageId:        string(testCELEvents[3].eventPayload),
-	// 	EnvVars:        expectedEnvVars,
-	// 	Args:           []string{string(testCELEvents[8].eventPayload), string(testCELEvents[9].eventPayload), string(testCELEvents[10].eventPayload)},
-	// }
-	// enabled := true
-	// wantHealthMonitoringState := attestpb.HealthMonitoringState{
-	// 	MemoryEnabled: &enabled,
-	// }
+	wantContainerState := attestpb.ContainerState{
+		ImageReference: string(testCELEvents[0].eventPayload),
+		ImageDigest:    string(testCELEvents[1].eventPayload),
+		RestartPolicy:  attestpb.RestartPolicy_Always,
+		ImageId:        string(testCELEvents[3].eventPayload),
+		EnvVars:        expectedEnvVars,
+		Args:           []string{string(testCELEvents[8].eventPayload), string(testCELEvents[9].eventPayload), string(testCELEvents[10].eventPayload)},
+	}
+	enabled := true
+	wantHealthMonitoringState := attestpb.HealthMonitoringState{
+		MemoryEnabled: &enabled,
+	}
 
 	fakeRTMR := fakertmr.CreateRtmrSubsystem(t.TempDir())
 
@@ -67,8 +69,16 @@ func TestVerifiedCosState(t *testing.T) {
 		}
 	}
 
-	_, err := VerifiedCosState(*cos_event_log, cel.CCMRTypeValue)
+	cosState, err := VerifiedCosState(cos_event_log, uint8(cel.CCMRType))
 	if err != nil {
 		t.Error(err)
+	}
+
+	if diff := cmp.Diff(cosState.Container, &wantContainerState, protocmp.Transform()); diff != "" {
+		t.Errorf("unexpected container state diff: \n%v", diff)
+	}
+
+	if diff := cmp.Diff(cosState.HealthMonitoring, &wantHealthMonitoringState, protocmp.Transform()); diff != "" {
+		t.Errorf("unexpected health monitoring state diff: \n%v", diff)
 	}
 }

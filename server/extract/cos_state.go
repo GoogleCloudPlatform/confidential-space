@@ -17,17 +17,17 @@ func VerifiedCosState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosSta
 	cosState.Container.OverriddenEnvVars = make(map[string]string)
 
 	seenSeparator := false
-	for _, record := range event_log.Records {
+	for _, record := range event_log.Records() {
 		if record.IndexType != registerType {
 			return nil, fmt.Errorf("expect registerType: %d, but get %d in a CEL record", registerType, record.IndexType)
 		}
 
 		switch record.IndexType {
-		case cel.PCRTypeValue:
+		case uint8(cel.PCRType):
 			if record.Index != coscel.CosEventPCR {
 				return nil, fmt.Errorf("found unexpected PCR %d in COS CEL log", record.Index)
 			}
-		case cel.CCMRTypeValue:
+		case uint8(cel.CCMRType):
 			if record.Index != coscel.CosCCELMRIndex {
 				return nil, fmt.Errorf("found unexpected CCELMR %d in COS CEL log", record.Index)
 			}
