@@ -84,12 +84,12 @@ delete_storage_bucket() {
 #   Location
 #######################################
 create_kms_keyring() {
-  gcloud kms keyrings list --location=${2} | grep ${1}
+  gcloud kms keyrings describe ${1} --location=${2} | grep ${1}
   if [[ $? -eq 0 ]]; then
     echo "Keyring ${1} already exists. Skipping the creation of new keyring ..."
   else
     echo "Keyring ${1} doesn't exists. Creating new keyring ${1} ..."
-    gcloud kms keyrings create ${1} --location=global
+    gcloud kms keyrings create ${1} --location=${2}
     if [[ $? -eq 0 ]]; then
       echo "KMS keyring ${1} is created successully."
     else
@@ -108,7 +108,7 @@ create_kms_keyring() {
 #   Location
 #######################################
 create_kms_encryption_key() {
-  gcloud kms keys list --keyring=${2} --location=${3} | grep ${1}
+  gcloud kms keys describe ${1} --keyring=${2} --location=${3} | grep ${1}
   if [[ $? -eq 0 ]]; then
     echo "Key ${1} for keyring ${2} already exists. Skipping the creation of new key ..."
   else
@@ -133,7 +133,7 @@ create_kms_encryption_key() {
 #   Location
 #######################################
 destroy_kms_key() {
-  gcloud kms keys list --keyring=${2} --location=${3} --filter="PRIMARY_STATE=(ENABLED)" | grep ${1}
+  gcloud kms keys describe ${1} --keyring=${2} --location=${3} | grep "ENABLED"
   if [[ $? -eq 0 ]]; then
     gcloud kms keys versions destroy 1 --key ${1} --keyring ${2} --location ${3}
     if [[ $? -eq 0 ]]; then
@@ -154,7 +154,7 @@ destroy_kms_key() {
 #   Name of the service-account
 #######################################
 create_service_account() {
-  gcloud iam service-accounts list | grep ${1}
+  gcloud iam service-accounts describe ${1} | grep ${1}
   if [[ $? -eq 0 ]]; then
     echo "Service-account ${1} already exists. Skipping the create of new service-account ..."
   else
@@ -199,7 +199,7 @@ delete_service_account() {
 #   Location
 #######################################
 create_workload_identity_pool() {
-  gcloud iam workload-identity-pools list --location=${2} | grep ${1}
+  gcloud iam workload-identity-pools describe ${1} --location=${2} | grep ${1}
   if [[ $? -eq 0 ]]; then
     echo "Workload Identity Pool ${1} already exists. Skipping the creation of new workload-idenity-pool ..."
   else
@@ -222,7 +222,7 @@ create_workload_identity_pool() {
 #   Location
 #######################################
 delete_workload_identity_pool() {
-  gcloud iam workload-identity-pools list --filter="state=(ACTIVE)" --location=${2} | grep ${1}
+  gcloud iam workload-identity-pools describe ${1} --location=${2} | grep "ACTIVE"
   if [[ $? -eq 0 ]]; then
     echo "Deleting workload-idenity-pool ${1}..."
     gcloud iam workload-identity-pools delete ${1} --location=${2} --quiet

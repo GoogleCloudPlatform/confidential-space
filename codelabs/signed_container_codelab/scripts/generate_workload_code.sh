@@ -169,7 +169,7 @@ func (*countLocationCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...any)
 		}
 	}
 
-	_, err = outputWriter.Write([]byte(fmt.Sprintf("%d", count)))
+	_, err = outputWriter.Write([]byte(fmt.Sprintf("%d\n", count)))
 	if err != nil {
 		logger.Errorf("Could not write to %v: %v", outputURI, err)
 		return subcommands.ExitFailure
