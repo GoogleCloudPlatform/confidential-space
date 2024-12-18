@@ -19,7 +19,7 @@ var googleCAPEM []byte
 
 // The certificates are downloaded from https://pki.goog/faq/#faq-27.
 // Note the guidance is to update at least semi-annually.
-func GoogleCACerts() (*x509.CertPool, error) {
+func googleCACerts() (*x509.CertPool, error) {
 	certs := x509.NewCertPool()
 	if !certs.AppendCertsFromPEM(googleCAPEM) {
 		return nil, errors.New("failed to parse Google CA certificates")
@@ -32,7 +32,7 @@ func GoogleCACerts() (*x509.CertPool, error) {
 // If an http.Client is provided, it will be used to initialize the idtoken validation client.
 func ValidateAndParse(ctx context.Context, client *http.Client, credentials []string, expectedAudience string) ([]string, error) {
 	if client == nil {
-		ca, err := GoogleCACerts()
+		ca, err := googleCACerts()
 		if err != nil {
 			return nil, err
 		}

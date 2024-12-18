@@ -1,4 +1,4 @@
-module github.com/google/confidential-space/server
+module github.com/GoogleCloudPlatform/confidential-space/server
 
 go 1.21
 
