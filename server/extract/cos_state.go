@@ -3,7 +3,7 @@ package extract
 import (
 	"fmt"
 
-	"github.com/google/confidential-space/server/coscel"
+	"github.com/GoogleCloudPlatform/confidential-space/server/coscel"
 	"github.com/google/go-eventlog/cel"
 	pb "github.com/google/go-tpm-tools/proto/attest"
 )

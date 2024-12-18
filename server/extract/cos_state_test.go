@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"testing"
 
-	"github.com/google/confidential-space/server/coscel"
+	"github.com/GoogleCloudPlatform/confidential-space/server/coscel"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-configfs-tsm/configfs/fakertmr"
 	"github.com/google/go-eventlog/cel"
