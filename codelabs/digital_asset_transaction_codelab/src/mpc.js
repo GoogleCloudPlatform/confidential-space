@@ -71,6 +71,6 @@ export const submitTransaction = async (signedTransaction) => {
 export const uploadFromMemory = async (contents) => {
   // Upload the results to the bucket without service account impersonation
   await storage.bucket(process.env.RESULTS_BUCKET)
-      .file('transaction_receipt_' + Date.now())
+      .file('transaction_receipt')
       .save(JSON.stringify(contents));
 };
