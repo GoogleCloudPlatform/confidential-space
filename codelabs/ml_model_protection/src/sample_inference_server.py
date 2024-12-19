@@ -89,23 +89,34 @@ def main():
   credentials = identity_pool.Credentials.from_info(credentials_config).with_scopes(_SCOPES)
   storage_client = storage.Client(credentials=credentials)
   bucket = storage_client.bucket(os.environ["PRIMUS_INPUT_STORAGE_BUCKET"])
-  blob = bucket.blob("model.tar.gz")
 
+  result_storage_client = storage.Client()
+  result_storage_bucket = os.environ["SECUNDUS_RESULT_STORAGE_BUCKET"]
+  result_bucket = result_storage_client.bucket(result_storage_bucket)
+  images_storage_bucket = os.environ["SECUNDUS_INPUT_STORAGE_BUCKET"]
+  images_bucket = result_storage_client.bucket(images_storage_bucket)
+  result_blob = result_bucket.blob("result")
+
+  blob = bucket.blob("model.tar.gz")
   current_directory = os.getcwd()
   local_tarfile = os.path.join(current_directory, "model.tar.gz")
-  blob.download_to_filename(local_tarfile)
-  with tarfile.open(local_tarfile, "r") as tar:
-    tar.extractall(path=f"{current_directory}")
+  try:
+    blob.download_to_filename(local_tarfile)
+    with tarfile.open(local_tarfile, "r") as tar:
+      tar.extractall(path=f"{current_directory}")
+    model = hub.load(f"{current_directory}")
+  except Exception as e:
+    with result_blob.open("w") as f:
+      f.write(f"Error: {e}")
+    return
 
-  model = hub.load(f"{current_directory}")
-  images_storage_bucket = os.environ["SECUNDUS_INPUT_STORAGE_BUCKET"]
-  result_storage_bucket = os.environ["SECUNDUS_RESULT_STORAGE_BUCKET"]
-  result_storage_client = storage.Client()
-  images_bucket = result_storage_client.bucket(images_storage_bucket)
-  result_bucket = result_storage_client.bucket(result_storage_bucket)
-  blobs = images_bucket.list_blobs()
-  result_blob = result_bucket.blob("result")
   results = []
+  try:
+    blobs = images_bucket.list_blobs()
+  except Exception as e:
+    with result_blob.open("w") as f:
+      f.write(f"Error: {e}")
+    return
   for blb in blobs:
     if blb.name.endswith((".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG")):
       # Construct the full GCS path to the image file
