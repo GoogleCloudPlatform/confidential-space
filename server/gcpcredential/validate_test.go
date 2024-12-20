@@ -49,7 +49,7 @@ func testSigningKey(t *testing.T) (*rsa.PrivateKey, jwkInfo) {
 }
 
 // Generates and returns a JWT token with the provided claims, audience, and signed by the provided key.
-func testGCPCredential(t *testing.T, emailClaims *claims, aud string, signer *rsa.PrivateKey) string {
+func testGCPCredential(t *testing.T, claims *emailClaims, aud string, signer *rsa.PrivateKey) string {
 	t.Helper()
 
 	now := time.Now().Unix()
@@ -57,8 +57,8 @@ func testGCPCredential(t *testing.T, emailClaims *claims, aud string, signer *rs
 	jwtClaims := jwt.MapClaims{
 		"aud":            aud,
 		"exp":            now + 60,
-		"email":          emailClaims.Email,
-		"email_verified": emailClaims.EmailVerified,
+		"email":          claims.Email,
+		"email_verified": claims.EmailVerified,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwtClaims)
@@ -68,7 +68,7 @@ func testGCPCredential(t *testing.T, emailClaims *claims, aud string, signer *rs
 	}
 	tokenString, err := token.SignedString(signer)
 	if err != nil {
-		t.Fatalf("Error generating token for %v: %v", emailClaims, err)
+		t.Fatalf("Error generating token for %v: %v", claims, err)
 	}
 
 	return tokenString
@@ -108,8 +108,8 @@ func TestValidateAndParse(t *testing.T) {
 
 	expectedEmails := []string{"token1@test.com", "token2@test.com"}
 	testTokens := []string{
-		testGCPCredential(t, &claims{expectedEmails[0], true}, testAudience, signer),
-		testGCPCredential(t, &claims{expectedEmails[1], true}, testAudience, signer),
+		testGCPCredential(t, &emailClaims{expectedEmails[0], true}, testAudience, signer),
+		testGCPCredential(t, &emailClaims{expectedEmails[1], true}, testAudience, signer),
 	}
 
 	// Returns a hardcoded JWK for token validation.
@@ -144,19 +144,19 @@ func TestValidateAndParseOmitsBadToken(t *testing.T) {
 
 	validEmail := "goodtoken@test.com"
 	expectedEmails := []string{validEmail}
-	validToken := testGCPCredential(t, &claims{validEmail, true}, testAudience, signer)
+	validToken := testGCPCredential(t, &emailClaims{validEmail, true}, testAudience, signer)
 
 	testcases := []struct {
 		name      string
-		badClaims *claims
+		badClaims *emailClaims
 	}{
 		{
 			name:      "No email claim",
-			badClaims: &claims{EmailVerified: true},
+			badClaims: &emailClaims{EmailVerified: true},
 		},
 		{
 			name:      "Email unverified",
-			badClaims: &claims{Email: "badtoken@test.com", EmailVerified: false},
+			badClaims: &emailClaims{Email: "badtoken@test.com", EmailVerified: false},
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestValidateAndParseOmitsBadToken(t *testing.T) {
 }
 
 func TestParseClaims(t *testing.T) {
-	expectedClaims := &claims{
+	expectedClaims := &emailClaims{
 		Email:         "test@googleserviceaccount.com",
 		EmailVerified: true,
 	}
@@ -192,7 +192,7 @@ func TestParseClaims(t *testing.T) {
 		},
 	}
 
-	claims, err := parseClaims(payload)
+	claims, err := parseEmailClaims(payload.Claims)
 	if err != nil {
 		t.Fatalf("parseClaims returned error %v", err)
 	}

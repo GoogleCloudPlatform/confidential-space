@@ -2,14 +2,21 @@ package gcpcredential
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
 )
@@ -56,7 +63,7 @@ func ValidateAndParse(ctx context.Context, client *http.Client, credentials []st
 		return nil, fmt.Errorf("could not create ID token validator: %v", err.Error())
 	}
 
-	var emailClaims []string
+	var emails []string
 
 	for i, token := range credentials {
 		payload, err := v.Validate(ctx, token, expectedAudience)
@@ -64,7 +71,7 @@ func ValidateAndParse(ctx context.Context, client *http.Client, credentials []st
 			return nil, fmt.Errorf("invalid ID token in position %v: %v, token %s", i, err.Error(), token)
 		}
 
-		tokenClaims, err := parseClaims(payload)
+		tokenClaims, err := parseEmailClaims(payload.Claims)
 		if err != nil {
 			fmt.Printf("Error with ID token in position %v: %v", i, err)
 			continue
@@ -80,10 +87,141 @@ func ValidateAndParse(ctx context.Context, client *http.Client, credentials []st
 			continue
 		}
 
-		emailClaims = append(emailClaims, tokenClaims.Email)
+		emails = append(emails, tokenClaims.Email)
 	}
 
-	return emailClaims, nil
+	return emails, nil
+}
+
+type JWK struct {
+	Alg string `json:"alg"`
+	Crv string `json:"crv"`
+	Kid string `json:"kid"`
+	Kty string `json:"kty"`
+	Use string `json:"use"`
+	E   string `json:"e"`
+	N   string `json:"n"`
+	X   string `json:"x"`
+	Y   string `json:"y"`
+}
+
+type PublicKeys struct {
+	Keys []JWK `json:"keys"`
+}
+
+func rsaPubKey(key JWK) (*rsa.PublicKey, error) {
+	decodedN, err := base64.RawURLEncoding.DecodeString(key.N)
+	if err != nil {
+		return nil, err
+	}
+	decodedE, err := base64.RawURLEncoding.DecodeString(key.E)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rsa.PublicKey{
+		N: new(big.Int).SetBytes(decodedN),
+		E: int(new(big.Int).SetBytes(decodedE).Int64()),
+	}, nil
+}
+
+func ecdsaPubKey(key JWK) (*ecdsa.PublicKey, error) {
+	decodedX, err := base64.RawURLEncoding.DecodeString(key.X)
+	if err != nil {
+		return nil, err
+	}
+	decodedY, err := base64.RawURLEncoding.DecodeString(key.Y)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     new(big.Int).SetBytes(decodedX),
+		Y:     new(big.Int).SetBytes(decodedY),
+	}, nil
+}
+
+// Validates the provided credentials using the provided public keys. It is the caller's responsibility
+// to retrieve and pass in Google's JWKs (https://www.googleapis.com/oauth2/v3/certs).
+// NOT TESTED YET - use at you own risk.
+func ValidateWithPubKeysAndParse(keys *PublicKeys, credentials []string, expectedAudience string) ([]string, error) {
+	keyFunc := func(token *jwt.Token) (any, error) {
+		kid, ok := token.Header["kid"]
+		if !ok {
+			return nil, fmt.Errorf("token missing Key ID")
+		}
+
+		for _, k := range keys.Keys {
+			if kid == k.Kid {
+				alg, ok := token.Header["alg"]
+				if !ok {
+					return nil, errors.New("no signing algorithm specified in token")
+				}
+
+				switch alg {
+				case "RS256":
+					return rsaPubKey(k)
+				case "ES256":
+					return ecdsaPubKey(k)
+				default:
+					return nil, fmt.Errorf("unsupported signing algorithm %v, expext RS256 or ES256", alg)
+				}
+			}
+		}
+
+		return nil, errors.New("no matching key found")
+	}
+
+	var emails []string
+	for i, token := range credentials {
+		// See https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token.
+
+		// Check the signature.
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(token, claims, keyFunc)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID token in position %v: %v, token %s", i, err.Error(), token)
+		}
+
+		// Check the audience.
+		audience := claims["aud"]
+		if audience != expectedAudience {
+			return nil, fmt.Errorf("unexpected audience for token in position %v: %v, token %s", i, audience, token)
+		}
+
+		// Check the issuer.
+		issuer := claims["iss"]
+		if issuer != "accounts.google.com" && issuer != "https://accounts.google.com" {
+			return nil, fmt.Errorf("invalid issuer for token in position %v: %v, token %s", i, issuer, token)
+		}
+
+		// Check the expiration.
+		if time.Now().Unix() > claims["exp"].(int64) {
+			return nil, fmt.Errorf("token in position %v is expired", i)
+		}
+
+		// Parse email.
+		tokenClaims, err := parseEmailClaims(claims)
+		if err != nil {
+			fmt.Printf("Error with ID token in position %v: %v", i, err)
+			continue
+		}
+
+		if tokenClaims.Email == "" {
+			fmt.Printf("ID token in position %v has no email claim\n", i)
+			continue
+		}
+
+		if !tokenClaims.EmailVerified {
+			fmt.Printf("email claim for ID token in position %v is not verified\n", i)
+			continue
+		}
+
+		emails = append(emails, tokenClaims.Email)
+	}
+
+	return emails, nil
 }
 
 // parse takes an idtoken.Payload, which stores claims in a map[string]any. We want to
@@ -91,12 +229,12 @@ func ValidateAndParse(ctx context.Context, client *http.Client, credentials []st
 // encode/decode via JSON.
 // This is valid because the original claims were decoded from JSON (as part of the JWT).
 // claims.go
-func parseClaims(payload *idtoken.Payload) (*claims, error) {
-	data, err := json.Marshal(payload.Claims)
+func parseEmailClaims(mapClaims map[string]any) (*emailClaims, error) {
+	data, err := json.Marshal(mapClaims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-	claims := &claims{}
+	claims := &emailClaims{}
 	if err = json.Unmarshal(data, claims); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal claims: %w", err)
 	}
@@ -108,7 +246,7 @@ func parseClaims(payload *idtoken.Payload) (*claims, error) {
 //
 //		https://cloud.google.com/compute/docs/instances/verifying-instance-identity#payload
 //		https://developers.google.com/identity/protocols/oauth2/openid-connect
-type claims struct {
+type emailClaims struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
 }
