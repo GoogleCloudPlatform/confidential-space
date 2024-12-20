@@ -63,34 +63,16 @@ func ValidateAndParse(ctx context.Context, client *http.Client, credentials []st
 		return nil, fmt.Errorf("could not create ID token validator: %v", err.Error())
 	}
 
-	var emails []string
-
-	for i, token := range credentials {
+	validator := func(token string) (map[string]any, error) {
 		payload, err := v.Validate(ctx, token, expectedAudience)
 		if err != nil {
-			return nil, fmt.Errorf("invalid ID token in position %v: %v, token %s", i, err.Error(), token)
+			return nil, err
 		}
 
-		tokenClaims, err := parseEmailClaims(payload.Claims)
-		if err != nil {
-			fmt.Printf("Error with ID token in position %v: %v", i, err)
-			continue
-		}
-
-		if tokenClaims.Email == "" {
-			fmt.Printf("ID token in position %v has no email claim\n", i)
-			continue
-		}
-
-		if !tokenClaims.EmailVerified {
-			fmt.Printf("email claim for ID token in position %v is not verified\n", i)
-			continue
-		}
-
-		emails = append(emails, tokenClaims.Email)
+		return payload.Claims, nil
 	}
 
-	return emails, nil
+	return validateAndParse(credentials, validator)
 }
 
 type JWK struct {
@@ -173,35 +155,48 @@ func ValidateWithPubKeysAndParse(keys *PublicKeys, credentials []string, expecte
 		return nil, errors.New("no matching key found")
 	}
 
-	var emails []string
-	for i, token := range credentials {
-		// See https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token.
-
+	validator := func(token string) (map[string]any, error) {
 		// Check the signature.
 		claims := jwt.MapClaims{}
 		_, err := jwt.ParseWithClaims(token, claims, keyFunc)
 		if err != nil {
-			return nil, fmt.Errorf("invalid ID token in position %v: %v, token %s", i, err.Error(), token)
+			return nil, err
 		}
 
 		// Check the audience.
 		audience := claims["aud"]
 		if audience != expectedAudience {
-			return nil, fmt.Errorf("unexpected audience for token in position %v: %v, token %s", i, audience, token)
+			return nil, fmt.Errorf("unexpected audience: %v, token %s", audience, token)
 		}
 
 		// Check the issuer.
 		issuer := claims["iss"]
 		if issuer != "accounts.google.com" && issuer != "https://accounts.google.com" {
-			return nil, fmt.Errorf("invalid issuer for token in position %v: %v, token %s", i, issuer, token)
+			return nil, fmt.Errorf("invalid issuer: %v, token %s", issuer, token)
 		}
 
 		// Check the expiration.
 		if time.Now().Unix() > claims["exp"].(int64) {
-			return nil, fmt.Errorf("token in position %v is expired", i)
+			return nil, errors.New("token is expired")
 		}
 
-		// Parse email.
+		return claims, nil
+	}
+
+	return validateAndParse(credentials, validator)
+}
+
+type validationFunc func(token string) (map[string]any, error)
+
+func validateAndParse(credentials []string, validator validationFunc) ([]string, error) {
+	var emails []string
+
+	for i, token := range credentials {
+		claims, err := validator(token)
+		if err != nil {
+			return nil, fmt.Errorf("Error validating token in position %v: %v", i, err)
+		}
+
 		tokenClaims, err := parseEmailClaims(claims)
 		if err != nil {
 			fmt.Printf("Error with ID token in position %v: %v", i, err)
