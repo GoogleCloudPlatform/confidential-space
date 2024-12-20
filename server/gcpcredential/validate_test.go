@@ -30,7 +30,7 @@ func TestGoogleCACerts(t *testing.T) {
 type jwkInfo = map[string]any
 
 // Generates and returns an RSA256 private key and associated JWK.
-func testSigningKey(t *testing.T) (*rsa.PrivateKey, JWK) {
+func testSigningKey(t *testing.T, keyID string) (*rsa.PrivateKey, JWK) {
 	t.Helper()
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -40,7 +40,7 @@ func testSigningKey(t *testing.T) (*rsa.PrivateKey, JWK) {
 
 	jwk := JWK{
 		Alg: "RS256",
-		Kid: testKeyID,
+		Kid: keyID,
 		N:   base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
 		E:   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
 	}
@@ -49,7 +49,7 @@ func testSigningKey(t *testing.T) (*rsa.PrivateKey, JWK) {
 }
 
 // Generates and returns a JWT token with the provided claims, audience, and signed by the provided key.
-func testGCPCredential(t *testing.T, claims *emailClaims, aud string, signer *rsa.PrivateKey) string {
+func testGCPCredential(t *testing.T, claims *emailClaims, aud, keyID string, signer *rsa.PrivateKey) string {
 	t.Helper()
 
 	now := time.Now().Unix()
@@ -64,7 +64,7 @@ func testGCPCredential(t *testing.T, claims *emailClaims, aud string, signer *rs
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwtClaims)
 	token.Header = map[string]any{
-		"kid": testKeyID,
+		"kid": keyID,
 		"alg": "RS256",
 	}
 	tokenString, err := token.SignedString(signer)
@@ -102,13 +102,14 @@ func testJWKFetcher(t *testing.T, jwks *PublicKeys) *jwkFetcher {
 }
 
 func TestValidation(t *testing.T) {
-	signer, jwk := testSigningKey(t)
-	jwks := &PublicKeys{[]JWK{jwk}}
+	signerA, jwkA := testSigningKey(t, testKeyID+"A")
+	signerB, jwkB := testSigningKey(t, testKeyID+"B")
+	jwks := &PublicKeys{[]JWK{jwkA, jwkB}}
 
-	expectedEmails := []string{"token1@test.com", "token2@test.com"}
+	expectedEmails := []string{"tokenA@test.com", "tokenB@test.com"}
 	testTokens := []string{
-		testGCPCredential(t, &emailClaims{expectedEmails[0], true}, testAudience, signer),
-		testGCPCredential(t, &emailClaims{expectedEmails[1], true}, testAudience, signer),
+		testGCPCredential(t, &emailClaims{expectedEmails[0], true}, testAudience, testKeyID+"A", signerA),
+		testGCPCredential(t, &emailClaims{expectedEmails[1], true}, testAudience, testKeyID+"B", signerB),
 	}
 
 	// Returns a hardcoded JWK for token validation.
@@ -136,7 +137,7 @@ func TestValidation(t *testing.T) {
 }
 
 func TestValidationError(t *testing.T) {
-	_, jwk := testSigningKey(t)
+	_, jwk := testSigningKey(t, testKeyID)
 	jwks := &PublicKeys{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
@@ -154,7 +155,7 @@ func TestValidationError(t *testing.T) {
 }
 
 func TestValidateAndParseOmitsBadToken(t *testing.T) {
-	signer, jwk := testSigningKey(t)
+	signer, jwk := testSigningKey(t, testKeyID)
 	jwks := &PublicKeys{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
@@ -162,7 +163,7 @@ func TestValidateAndParseOmitsBadToken(t *testing.T) {
 
 	validEmail := "goodtoken@test.com"
 	expectedEmails := []string{validEmail}
-	validToken := testGCPCredential(t, &emailClaims{validEmail, true}, testAudience, signer)
+	validToken := testGCPCredential(t, &emailClaims{validEmail, true}, testAudience, testKeyID, signer)
 
 	testcases := []struct {
 		name      string
@@ -181,7 +182,7 @@ func TestValidateAndParseOmitsBadToken(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given a valid token and a "bad" token (ex. unverified email), expect to only return the former.
-			badToken := testGCPCredential(t, tc.badClaims, testAudience, signer)
+			badToken := testGCPCredential(t, tc.badClaims, testAudience, testKeyID, signer)
 
 			testTokens := []string{validToken, badToken}
 
