@@ -30,7 +30,7 @@ func TestGoogleCACerts(t *testing.T) {
 type jwkInfo = map[string]any
 
 // Generates and returns an RSA256 private key and associated JWK.
-func testSigningKey(t *testing.T) (*rsa.PrivateKey, jwkInfo) {
+func testSigningKey(t *testing.T) (*rsa.PrivateKey, JWK) {
 	t.Helper()
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -38,11 +38,11 @@ func testSigningKey(t *testing.T) (*rsa.PrivateKey, jwkInfo) {
 		t.Fatalf("Error generating test key: %v", err)
 	}
 
-	jwk := jwkInfo{
-		"alg": "RS256",
-		"kid": testKeyID,
-		"n":   base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
-		"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
+	jwk := JWK{
+		Alg: "RS256",
+		Kid: testKeyID,
+		N:   base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+		E:   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
 	}
 
 	return key, jwk
@@ -56,6 +56,7 @@ func testGCPCredential(t *testing.T, claims *emailClaims, aud string, signer *rs
 
 	jwtClaims := jwt.MapClaims{
 		"aud":            aud,
+		"iss":            "accounts.google.com",
 		"exp":            now + 60,
 		"email":          claims.Email,
 		"email_verified": claims.EmailVerified,
@@ -82,13 +83,10 @@ func (t *jwkFetcher) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.jwkFunc(req), nil
 }
 
-func testJWKFetcher(t *testing.T, jwks []jwkInfo) *jwkFetcher {
+func testJWKFetcher(t *testing.T, jwks *PublicKeys) *jwkFetcher {
 	t.Helper()
 	return &jwkFetcher{
 		jwkFunc: func(req *http.Request) *http.Response {
-			jwks := map[string]any{
-				"keys": jwks,
-			}
 			respBytes, err := json.Marshal(jwks)
 			if err != nil {
 				t.Fatalf("Unable to marshal server response: %v", err)
@@ -103,8 +101,9 @@ func testJWKFetcher(t *testing.T, jwks []jwkInfo) *jwkFetcher {
 	}
 }
 
-func TestValidateAndParse(t *testing.T) {
+func TestValidation(t *testing.T) {
 	signer, jwk := testSigningKey(t)
+	jwks := &PublicKeys{[]JWK{jwk}}
 
 	expectedEmails := []string{"token1@test.com", "token2@test.com"}
 	testTokens := []string{
@@ -113,8 +112,9 @@ func TestValidateAndParse(t *testing.T) {
 	}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, []jwkInfo{jwk})}
+	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
 
+	// ValidateAndParse.
 	emails, err := ValidateAndParse(context.Background(), validatorClient, testTokens, testAudience)
 	if err != nil {
 		t.Fatalf("ValidateAndParse error %v", err)
@@ -123,24 +123,42 @@ func TestValidateAndParse(t *testing.T) {
 	if !cmp.Equal(emails, expectedEmails) {
 		t.Errorf("ValidateAndParse did not return expected emails: got %v, want %v", emails, expectedEmails)
 	}
+
+	// ValidateAndParseWithPubkeys.
+	emails, err = ValidateWithPubKeysAndParse(jwks, testTokens, testAudience)
+	if err != nil {
+		t.Fatalf("ValidateWithPubKeysAndParse error %v", err)
+	}
+
+	if !cmp.Equal(emails, expectedEmails) {
+		t.Errorf("ValidateWithPubKeysAndParse did not return expected emails: got %v, want %v", emails, expectedEmails)
+	}
 }
 
-func TestValidateAndParseValidationError(t *testing.T) {
+func TestValidationError(t *testing.T) {
 	_, jwk := testSigningKey(t)
+	jwks := &PublicKeys{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, []jwkInfo{jwk})}
+	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
 
+	// ValidateAndParse.
 	if _, err := ValidateAndParse(context.Background(), validatorClient, []string{"fake.test.token"}, testAudience); err == nil {
 		t.Errorf("ValidateAndParse returned successfully, expected error")
+	}
+
+	// ValidateAndParseWithPubkeys.
+	if _, err := ValidateWithPubKeysAndParse(jwks, []string{"fake.test.token"}, testAudience); err == nil {
+		t.Errorf("ValidateWithPubKeysAndParse returned successfully, expected error")
 	}
 }
 
 func TestValidateAndParseOmitsBadToken(t *testing.T) {
 	signer, jwk := testSigningKey(t)
+	jwks := &PublicKeys{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, []jwkInfo{jwk})}
+	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
 
 	validEmail := "goodtoken@test.com"
 	expectedEmails := []string{validEmail}
@@ -162,11 +180,12 @@ func TestValidateAndParseOmitsBadToken(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Given a valid token and a "bad" token (ex. unverified email), expect to only return the former.
 			badToken := testGCPCredential(t, tc.badClaims, testAudience, signer)
 
 			testTokens := []string{validToken, badToken}
 
-			// Given a valid token and a "bad" token (ex. unverified email), expect to only return the former.
+			// ValidateAndParse.
 			emails, err := ValidateAndParse(context.Background(), validatorClient, testTokens, testAudience)
 			if err != nil {
 				t.Fatalf("ValidateAndParse error %v", err)
@@ -175,6 +194,17 @@ func TestValidateAndParseOmitsBadToken(t *testing.T) {
 			if !cmp.Equal(emails, expectedEmails) {
 				t.Errorf("ValidateAndParse did not return expected emails: got %v, want %v", emails, expectedEmails)
 			}
+
+			// ValidateAndParseWithPubkeys.
+			emails, err = ValidateWithPubKeysAndParse(jwks, testTokens, testAudience)
+			if err != nil {
+				t.Fatalf("ValidateWithPubKeysAndParse error %v", err)
+			}
+
+			if !cmp.Equal(emails, expectedEmails) {
+				t.Errorf("ValidateWithPubKeysAndParse did not return expected emails: got %v, want %v", emails, expectedEmails)
+			}
+
 		})
 	}
 }

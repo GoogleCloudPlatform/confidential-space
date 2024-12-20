@@ -178,7 +178,10 @@ func ValidateWithPubKeysAndParse(jwks *PublicKeys, credentials []string, expecte
 		}
 
 		// Check the expiration.
-		if time.Now().Unix() > claims["exp"].(int64) {
+		fmt.Printf("token is %s", token)
+
+		// Numbers need to be converted to float64 first to avoid panicking (https://stackoverflow.com/a/29690346).
+		if time.Now().Unix() > int64(claims["exp"].(float64)) {
 			return nil, errors.New("token is expired")
 		}
 
@@ -220,7 +223,7 @@ func validateAndParse(credentials []string, validator validationFunc) ([]string,
 	return emails, nil
 }
 
-// parse takes an idtoken.Payload, which stores claims in a map[string]any. We want to
+// Takes an idtoken.Payload, which stores claims in a map[string]any. We want to
 // interpret the claims as a googleClaims struct. Instead of manually inspecting the map we just
 // encode/decode via JSON.
 // This is valid because the original claims were decoded from JSON (as part of the JWT).
