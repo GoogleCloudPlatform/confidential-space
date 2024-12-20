@@ -19,16 +19,19 @@ type ImageSignature struct {
 
 const maxSignatureCount = 300
 
-// Verify attempts to verify the provided signatures with imageDigest and returns:
-//   - []*ImageSignature - list of successfully verified signatures
-//   - []error           - (nonblocking) list of errors from unsuccessful verifications
-//   - err               - (blocking) whether the number of provided signatures exceeds the allowed max
-func Verify(imageDigest string, signatures []*ImageSignature) ([]*ImageSignature, []error, error) {
+type VerifyResult struct {
+	Verified []*ImageSignature
+	Errors   []error
+}
+
+// Verify attempts to verify the provided signatures with imageDigest and returns a VerifyResults
+// object, which contains successfully verified signatures and the errors that arose from verification errors.
+func Verify(imageDigest string, signatures []*ImageSignature) (*VerifyResult, error) {
 	numSignatures := len(signatures)
 	if numSignatures == 0 {
-		return nil, nil, nil
+		return &VerifyResult{}, nil
 	} else if numSignatures > maxSignatureCount {
-		return nil, nil, fmt.Errorf("got %v signatures, should be less than the limit %d", numSignatures, maxSignatureCount)
+		return &VerifyResult{}, fmt.Errorf("got %v signatures, should be less than the limit %d", numSignatures, maxSignatureCount)
 	}
 
 	validSigs := make([]*ImageSignature, numSignatures)
@@ -63,7 +66,7 @@ func Verify(imageDigest string, signatures []*ImageSignature) ([]*ImageSignature
 		}
 	}
 
-	return sigs, errs, nil
+	return &VerifyResult{sigs, errs}, nil
 
 }
 

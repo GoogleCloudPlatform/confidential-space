@@ -146,14 +146,18 @@ func TestVerify(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotSigs, partial, err := Verify(tc.imageDigest, tc.containerImageSignatures)
+			results, err := Verify(tc.imageDigest, tc.containerImageSignatures)
 			if err != nil {
 				t.Fatalf("Verify(%v, %v) returned error: %v", tc.imageDigest, tc.containerImageSignatures, err)
 			}
-			if len(partial) != tc.numExpectedErrors {
-				t.Errorf("Verify(%v, %v) did not return number of expected partial errors, got %d, want %d", tc.imageDigest, tc.containerImageSignatures, len(partial), tc.numExpectedErrors)
+
+			verifiedSigs := results.Verified
+			verifyErrors := results.Errors
+
+			if len(verifyErrors) != tc.numExpectedErrors {
+				t.Errorf("Verify(%v, %v) did not return number of expected partial errors, got %d, want %d", tc.imageDigest, tc.containerImageSignatures, len(verifyErrors), tc.numExpectedErrors)
 			}
-			if diff := cmp.Diff(gotSigs, tc.expectedSignatures, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(verifiedSigs, tc.expectedSignatures, protocmp.Transform()); diff != "" {
 				t.Errorf("Verify(%v, %v) returned unexpected signatures diff (-want +got):\n%s", tc.imageDigest, tc.containerImageSignatures, diff)
 			}
 		})
@@ -162,7 +166,7 @@ func TestVerify(t *testing.T) {
 
 func TestVerifyWithTooManySignatures(t *testing.T) {
 	signatures := make([]*ImageSignature, maxSignatureCount+1)
-	_, _, err := Verify("sha256:9494e567c7c44e8b9f8808c1658a47c9b7979ef3cceef10f48754fc2706802ba", signatures)
+	_, err := Verify("sha256:9494e567c7c44e8b9f8808c1658a47c9b7979ef3cceef10f48754fc2706802ba", signatures)
 	if err == nil {
 		t.Errorf("Verify did not return expected error, got nil, but want error")
 	}
