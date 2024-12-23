@@ -35,9 +35,9 @@ func googleCACerts() (*x509.CertPool, error) {
 	return certs, nil
 }
 
-// ValidateAndParse validates each of the provided credentials, then returns the emails of the successfully verified tokens.
+// Validate validates each of the provided credentials, then returns the emails of the successfully verified tokens/emails.
 // If an http.Client is provided, it will be used to initialize the idtoken validation client.
-func ValidateAndParse(ctx context.Context, client *http.Client, credentials []string, expectedAudience string) ([]string, error) {
+func Validate(ctx context.Context, client *http.Client, credentials []string, expectedAudience string) ([]string, error) {
 	if client == nil {
 		ca, err := googleCACerts()
 		if err != nil {
@@ -127,7 +127,7 @@ func ecdsaPubKey(key JWK) (*ecdsa.PublicKey, error) {
 // Validates the provided credentials using the provided public keys.
 // It is the caller's responsibility to retrieve and provide Google's JWKs (https://www.googleapis.com/oauth2/v3/certs).
 // NOT TESTED YET - use at you own risk.
-func ValidateWithPubKeysAndParse(jwks *PublicKeys, credentials []string, expectedAudience string) ([]string, error) {
+func ValidateWithJWKS(jwks *PublicKeys, credentials []string, expectedAudience string) ([]string, error) {
 	// For JWT validation - finds the JWK that corresponds to the tokens Key ID and parses it into its respective key type.
 	keyFunc := func(token *jwt.Token) (any, error) {
 		kid, ok := token.Header["kid"]
