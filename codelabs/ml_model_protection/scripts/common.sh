@@ -16,18 +16,6 @@ err() {
 }
 
 #######################################
-# Prints an error message and exits with error code 1.
-# Globals:
-#   None
-# Arguments:
-#   Message
-#######################################
-fatal() {
-  err $*
-  exit 1;
-}
-
-#######################################
 # Sets the GCP project.
 # Globals:
 #   None
@@ -35,12 +23,12 @@ fatal() {
 #   GCP Project-Id
 #######################################
 set_gcp_project() {
-  echo "Setting project to "$1" ..."
-  gcloud config set project "$1" > /dev/null
+  echo "Setting project to "${1}" ..."
+  gcloud config set project "${1}" > /dev/null
   if [[ $? -eq 0 ]]; then
-    echo "Project is set to "$1" successfully."
+    echo "Project is set to "${1}" successfully."
   else
-    err "Failed to set project to "$1"."
+    err "Failed to set project to "${1}"."
   fi
 }
 
@@ -52,16 +40,16 @@ set_gcp_project() {
 #   Storage bucket name
 #######################################
 create_storage_bucket() {
-  gsutil ls | grep "$1"
+  gsutil ls | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Storage bucket "$1" already exists. Skipping the creation of new storage bucket ..."
+    echo "Storage bucket "${1}" already exists. Skipping the creation of new storage bucket ..."
   else
-    echo "Storage bucket "$1" doesn't exists. Creating new storage bucket "$1" ..."
+    echo "Storage bucket "${1}" doesn't exists. Creating new storage bucket "${1}" ..."
     gsutil mb gs://$1
     if [[ $? -eq 0 ]]; then
-      echo "Storage bucket "$1" is created successfully."
+      echo "Storage bucket "${1}" is created successfully."
     else
-      err "Failed to create a storage bucket "$1"."
+      err "Failed to create a storage bucket "${1}"."
     fi
   fi
 }
@@ -74,17 +62,17 @@ create_storage_bucket() {
 #   Storage bucket name
 #######################################
 delete_storage_bucket() {
-  gsutil ls | grep "$1"
+  gsutil ls | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Deleting the storage bucket "$1"..."
-    gsutil rm -r gs://"$1"
+    echo "Deleting the storage bucket "${1}"..."
+    gsutil rm -r gs://$1
     if [[ $? -eq 0 ]]; then
-      echo "Storage bucket "$1" is deleted successfully."
+      echo "Storage bucket "${1}" is deleted successfully."
     else
-      err "Failed to delete a storage bucket "$1". Check if bucket "$1" exists or not."
+      err "Failed to delete a storage bucket "${1}"."
     fi
   else
-    echo "Storage bucket "$1" doesn't exists. Skipping the deletion of storage bucket "$1" ..."
+    echo "Storage bucket "${1}" doesn't exists. Skipping the deletion of storage bucket "${1}" ..."
   fi
 }
 
@@ -97,16 +85,16 @@ delete_storage_bucket() {
 #   Location
 #######################################
 create_kms_keyring() {
-  gcloud kms keyrings list --location="$2" | grep "$1"
+  gcloud kms keyrings describe "${1}" --location="${2}" | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Keyring "$1" already exists. Skipping the creation of new keyring ..."
+    echo "Keyring "${1}" already exists. Skipping the creation of new keyring ..."
   else
-    echo "Keyring "$1" doesn't exists. Creating new keyring "$1" ..."
-    gcloud kms keyrings create "$1" --location=global
+    echo "Keyring "${1}" doesn't exists. Creating new keyring "${1}" ..."
+    gcloud kms keyrings create "${1}" --location="${2}"
     if [[ $? -eq 0 ]]; then
-      echo "KMS keyring "$1" is created successully."
+      echo "KMS keyring "${1}" is created successully."
     else
-      err "Failed to create a KMS keyring "$1"."
+      err "Failed to create a KMS keyring "${1}"."
     fi
   fi
 }
@@ -121,16 +109,16 @@ create_kms_keyring() {
 #   Location
 #######################################
 create_kms_encryption_key() {
-  gcloud kms keys list --keyring="$2" --location="$3" | grep "$1"
+  gcloud kms keys describe "${1}" --keyring="${2}" --location=${3} | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Key "$1" for keyring "$2" already exists. Skipping the creation of new key ..."
+    echo "Key "${1}" for keyring "${2}" already exists. Skipping the creation of new key ..."
   else
-    echo "Key "$1" doesn't exists for keyring "$2". Creating new key "$1" ..."
-    gcloud kms keys create "$1" --location="$3" --keyring="$2" --purpose=encryption
+    echo "Key "${1}" doesn't exists for keyring "${2}". Creating new key "${1}" ..."
+    gcloud kms keys create "${1}" --location=${3} --keyring="${2}" --purpose=encryption
     if [[ $? -eq 0 ]]; then
-      echo "KMS key "$1" is created succesfully."
+      echo "KMS key "${1}" is created succesfully."
     else
-      err "Failed to create a KMS key "$1"."
+      err "Failed to create a KMS key "${1}"."
     fi
   fi
 }
@@ -146,16 +134,16 @@ create_kms_encryption_key() {
 #   Location
 #######################################
 destroy_kms_key() {
-  gcloud kms keys list --keyring="$2" --location="$3" --filter="PRIMARY_STATE=(ENABLED)" | grep "$1"
+  gcloud kms keys describe "${1}" --keyring="${2}" --location=${3} | grep "ENABLED"
   if [[ $? -eq 0 ]]; then
-    gcloud kms keys versions destroy 1 --key "$1" --keyring "$2" --location "$3"
+    gcloud kms keys versions destroy 1 --key "${1}" --keyring "${2}" --location ${3}
     if [[ $? -eq 0 ]]; then
-      echo "Key "$1" is deleted successfully."
+      echo "Key "${1}" is deleted successfully."
     else
-      err "Failed to delete a key "$1"."
+      err "Failed to delete a key "${1}"."
     fi
   else
-    echo "Key "$1" doesn't exist. Skipping the deletion of the key "$1"..."
+    echo "Key "${1}" doesn't exist. Skipping the deletion of the key "${1}"..."
   fi
 }
 
@@ -167,16 +155,16 @@ destroy_kms_key() {
 #   Name of the service-account
 #######################################
 create_service_account() {
-  gcloud iam service-accounts list | grep "$1"
+  gcloud iam service-accounts list | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Service-account "$1" already exists. Skipping the create of new service-account ..."
+    echo "Service-account "${1}" already exists. Skipping the create of new service-account ..."
   else
-    echo "Creating service-account "$1" ..."
-    gcloud iam service-accounts create "$1"
+    echo "Creating service-account "${1}" ..."
+    gcloud iam service-accounts create "${1}"
     if [[ $? -eq 0 ]]; then
-      echo "Service-account "$1" is created successfully."
+      echo "Service-account "${1}" is created successfully."
     else
-      err "Failed to create service-account "$1"."
+      err "Failed to create service-account "${1}"."
     fi
   fi
 }
@@ -189,17 +177,17 @@ create_service_account() {
 #   Name of the service-account
 #######################################
 delete_service_account() {
-  gcloud iam service-accounts list | grep "$1"
+  gcloud iam service-accounts list | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Deleting service-account "$1"..."
-    gcloud iam service-accounts delete "$1" --quiet
+    echo "Deleting service-account "${1}"..."
+    gcloud iam service-accounts delete "${1}" --quiet
     if [[ $? -eq 0 ]]; then
-      echo "Service-account "$1" is deleted successfully."
+      echo "Service-account "${1}" is deleted successfully."
     else
-      err "Failed to delete service-account "$1"."
+      err "Failed to delete service-account "${1}"."
     fi
   else
-    echo "Service-account "$1" doesn't exist. Skipping the deletion of workload identity pool "$1" ..."
+    echo "Service-account "${1}" doesn't exist. Skipping the deletion of workload identity pool "${1}" ..."
   fi
 }
 
@@ -212,16 +200,16 @@ delete_service_account() {
 #   Location
 #######################################
 create_workload_identity_pool() {
-  gcloud iam workload-identity-pools list --location="$2" | grep "$1"
+  gcloud iam workload-identity-pools describe "${1}" --location="${2}" | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Workload Identity Pool "$1" already exists. Skipping the creation of new workload-idenity-pool ..."
+    echo "Workload Identity Pool "${1}" already exists. Skipping the creation of new workload-idenity-pool ..."
   else
-    echo "Creating workload identity pool "$1" ..."
-    gcloud iam workload-identity-pools create "$1" --location "$2"
+    echo "Creating workload identity pool "${1}" ..."
+    gcloud iam workload-identity-pools create "${1}" --location "${2}"
     if [[ $? -eq 0 ]]; then
-      echo "Workload identity pool "$1" is created successfully."
+      echo "Workload identity pool "${1}" is created successfully."
     else
-      err "Failed to create workload identity pool "$1"."
+      err "Failed to create workload identity pool "${1}"."
     fi
   fi
 }
@@ -235,17 +223,17 @@ create_workload_identity_pool() {
 #   Location
 #######################################
 delete_workload_identity_pool() {
-  gcloud iam workload-identity-pools list --filter="state=(ACTIVE)" --location="$2" | grep "$1"
+  gcloud iam workload-identity-pools describe "${1}" --location="${2}" | grep "ACTIVE"
   if [[ $? -eq 0 ]]; then
-    echo "Deleting workload-idenity-pool "$1"..."
-    gcloud iam workload-identity-pools delete "$1" --location="$2" --quiet
+    echo "Deleting workload-idenity-pool "${1}"..."
+    gcloud iam workload-identity-pools delete "${1}" --location="${2}" --quiet
     if [[ $? -eq 0 ]]; then
-      echo "Workload identity pool "$1" is deleted successfully."
+      echo "Workload identity pool "${1}" is deleted successfully."
     else
-      err "Failed to delete workload identity pool "$1"."
+      err "Failed to delete workload identity pool "${1}"."
     fi
   else
-    echo "Workload identity pool "$1" doesn't exist. Skipping the deletion of workload identity pool "$1" ..."
+    echo "Workload identity pool "${1}" doesn't exist. Skipping the deletion of workload identity pool "${1}" ..."
   fi
 }
 
@@ -258,16 +246,16 @@ delete_workload_identity_pool() {
 #   Location of artifact repository
 #######################################
 create_artifact_repository() {
-  gcloud artifacts repositories list --location="$2" | grep "$1"
+  gcloud artifacts repositories list --location="${2}" | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Artifact Registry "$1" already exists. Skipping the creation of new artifact registry ..."
+    echo "Artifact Registry "${1}" already exists. Skipping the creation of new artifact registry ..."
   else
-    echo "Creating new artifact registry "$1" ..."
-    gcloud artifacts repositories create "$1" --repository-format=docker --location="$2"
+    echo "Creating new artifact registry "${1}" ..."
+    gcloud artifacts repositories create "${1}" --repository-format=docker --location="${2}"
     if [[ $? -eq 0 ]]; then
-      echo "Artifact registry "$1" is created successfully."
+      echo "Artifact registry "${1}" is created successfully."
     else
-      err "Failed to create a artifact registry "$1"."
+      err "Failed to create a artifact registry "${1}"."
     fi
   fi
 }
@@ -281,16 +269,70 @@ create_artifact_repository() {
 #   Location of artifact repository
 #######################################
 delete_artifact_repository() {
-  gcloud artifacts repositories list --location="$2" | grep "$1"
+  gcloud artifacts repositories list --location="${2}" | grep "${1}"
   if [[ $? -eq 0 ]]; then
-    echo "Deleting an artifact repository "$1" ..."
-    gcloud artifacts repositories delete "$1" --location="$2" --async  --quiet
+    echo "Deleting an artifact repository "${1}" ..."
+    gcloud artifacts repositories delete "${1}" --location="${2}" --async  --quiet
     if [[ $? -eq 0 ]]; then
-      echo "Artifact repository "$1" is deleted successfully."
+      echo "Artifact repository "${1}" is deleted successfully."
     else
-      err "Failed to delete a artifact repository "$1"."
+      err "Failed to delete a artifact repository "${1}"."
     fi
   else
-    echo "Artifact repository "$1" doesn't exist. Skipping the deletion of "$1"..."
+    echo "Artifact repository "${1}" doesn't exist. Skipping the deletion of "${1}"..."
   fi
+}
+
+#######################################
+# Deletes the Virtual Machine.
+# Globals:
+#   None
+# Arguments:
+#   Name of VM
+#   Zone of VM
+#   Project ID under which VM was created
+#######################################
+delete_vm() {
+  gcloud compute instances list --project ${3} | grep "${1}"
+  if [[ $? -eq 0 ]]; then
+    echo "Deleting the workload VM "${1}"..."
+    gcloud compute instances delete "${1}" --zone "${2}" --quiet
+    if [[ $? -eq 0 ]]; then
+      echo "Workload VM "${1}" is deleted successfully."
+    else
+      err "Failed to delete workload VM "${1}"."
+    fi
+  else
+    echo "Workload VM "${1}" doesn't exist in zone "${2}". Skipping the deletion of workload VM "${1}" ..."
+  fi
+}
+
+
+#######################################
+# Function to get confirmation for given message.
+# Globals:
+#   None
+# Arguments:
+#   Confirmation message
+#######################################
+get_confirmation() {
+  local confirmation_message="$1"
+  local confirmed=false
+
+  while true; do
+    read -p "${confirmation_message} (yes/no)" answer
+    case $answer in
+      [Yy]*)
+        confirmed=true
+        break
+        ;;
+      [Nn]*)
+        confirmed=false
+        break
+        ;;
+      *) echo "Please answer yes or no.";;
+    esac
+  done
+
+  echo "$confirmed"
 }
