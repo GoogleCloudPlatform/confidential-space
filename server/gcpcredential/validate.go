@@ -87,7 +87,7 @@ type JWK struct {
 	Y   string `json:"y"`
 }
 
-type PublicKeys struct {
+type JWKS struct {
 	Keys []JWK `json:"keys"`
 }
 
@@ -126,8 +126,7 @@ func ecdsaPubKey(key JWK) (*ecdsa.PublicKey, error) {
 
 // Validates the provided credentials using the provided public keys.
 // It is the caller's responsibility to retrieve and provide Google's JWKs (https://www.googleapis.com/oauth2/v3/certs).
-// NOT TESTED YET - use at you own risk.
-func ValidateWithJWKS(jwks *PublicKeys, credentials []string, expectedAudience string) ([]string, error) {
+func ValidateWithJWKS(jwks *JWKS, credentials []string, expectedAudience string) ([]string, error) {
 	// For JWT validation - finds the JWK that corresponds to the tokens Key ID and parses it into its respective key type.
 	keyFunc := func(token *jwt.Token) (any, error) {
 		kid, ok := token.Header["kid"]
@@ -178,8 +177,6 @@ func ValidateWithJWKS(jwks *PublicKeys, credentials []string, expectedAudience s
 		}
 
 		// Check the expiration.
-		fmt.Printf("token is %s", token)
-
 		// Numbers need to be converted to float64 first to avoid panicking (https://stackoverflow.com/a/29690346).
 		if time.Now().Unix() > int64(claims["exp"].(float64)) {
 			return nil, errors.New("token is expired")

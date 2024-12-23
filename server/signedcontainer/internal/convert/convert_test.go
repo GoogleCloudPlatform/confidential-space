@@ -110,7 +110,7 @@ func TestPemToECDSAP256Sha256KeysetHandle(t *testing.T) {
 	if !gotEntry.IsPrimary() {
 		t.Errorf("gotEntry.IsPrimary() = false, want true")
 	}
-	if !gotEntry.Key().Equal(tinkPublicKey) {
+	if !gotEntry.Key().Equals(tinkPublicKey) {
 		t.Errorf("gotEntry.Key().Equal(tinkPublicKey) = false, want true")
 	}
 }
@@ -146,7 +146,7 @@ func TestPemToRsaSsaPkcs1Sha256Keyset(t *testing.T) {
 	if !gotEntry.IsPrimary() {
 		t.Errorf("gotEntry.IsPrimary() = false, want true")
 	}
-	if !gotEntry.Key().Equal(tinkPublicKey) {
+	if !gotEntry.Key().Equals(tinkPublicKey) {
 		t.Errorf("gotEntry.Key().Equal(tinkPublicKey) = false, want true")
 	}
 }
@@ -189,7 +189,7 @@ func TestPemToRsaSsaPssSha256KeysetHandle(t *testing.T) {
 	if !gotEntry.IsPrimary() {
 		t.Errorf("gotEntry.IsPrimary() = false, want true")
 	}
-	if !gotEntry.Key().Equal(tinkPublicKey) {
+	if !gotEntry.Key().Equals(tinkPublicKey) {
 		t.Errorf("gotEntry.Key().Equal(tinkPublicKey) = false, want true")
 	}
 }

@@ -85,7 +85,7 @@ func (t *jwkFetcher) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.jwkFunc(req), nil
 }
 
-func testJWKFetcher(t *testing.T, jwks *PublicKeys) *jwkFetcher {
+func testJWKFetcher(t *testing.T, jwks *JWKS) *jwkFetcher {
 	t.Helper()
 	return &jwkFetcher{
 		jwkFunc: func(req *http.Request) *http.Response {
@@ -106,7 +106,7 @@ func testJWKFetcher(t *testing.T, jwks *PublicKeys) *jwkFetcher {
 func TestValidation(t *testing.T) {
 	signerA, jwkA := testRSASigner(t, testKeyID+"A")
 	signerB, jwkB := testRSASigner(t, testKeyID+"B")
-	jwks := &PublicKeys{[]JWK{jwkA, jwkB}}
+	jwks := &JWKS{[]JWK{jwkA, jwkB}}
 
 	expectedEmails := []string{"tokenA@test.com", "tokenB@test.com"}
 	testTokens := []string{
@@ -140,7 +140,7 @@ func TestValidation(t *testing.T) {
 
 func TestValidationError(t *testing.T) {
 	_, jwk := testRSASigner(t, testKeyID)
-	jwks := &PublicKeys{[]JWK{jwk}}
+	jwks := &JWKS{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
 	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
@@ -158,7 +158,7 @@ func TestValidationError(t *testing.T) {
 
 func TestValidationOmitsBadToken(t *testing.T) {
 	signer, jwk := testRSASigner(t, testKeyID)
-	jwks := &PublicKeys{[]JWK{jwk}}
+	jwks := &JWKS{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
 	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
@@ -219,7 +219,7 @@ func TestValidateWithECDSASigner(t *testing.T) {
 		t.Fatalf("Error generating ECDSA signing key: %v", err)
 	}
 
-	jwks := &PublicKeys{[]JWK{
+	jwks := &JWKS{[]JWK{
 		{
 			Alg: "ES256",
 			Kid: testKeyID,
