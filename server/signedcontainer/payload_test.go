@@ -16,12 +16,12 @@ q/hY7zZO8rnRN1xzTwIDAQAB
 
 var (
 	encodedPublicKey = unpaddedEncoding.EncodeToString([]byte(pubKey))
-	testPayload      = &Payload{
-		Critical: Critical{
-			Identity: Identity{
+	testPayload      = &payload{
+		Critical: critical{
+			Identity: identity{
 				DockerReference: "us-docker.pkg.dev/confidential-space-images-dev/cs-cosign-tests/base",
 			},
-			Image: Image{
+			Image: image{
 				DockerManifestDigest: "sha256:9494e567c7c44e8b9f8808c1658a47c9b7979ef3cceef10f48754fc2706802ba",
 			},
 			Type: criticalType,
@@ -33,7 +33,7 @@ func TestUnmarshalPayload(t *testing.T) {
 	testCases := []struct {
 		name         string
 		payloadBytes []byte
-		wantPayload  *Payload
+		wantPayload  *payload
 		wantPass     bool
 	}{
 		{
@@ -106,7 +106,7 @@ func TestPublicKey(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			testPayload.Optional = tc.annotations
-			gotPublicKey, err := testPayload.PublicKey()
+			gotPublicKey, err := testPayload.publicKey()
 			if err != nil && tc.wantPass {
 				t.Errorf("PublicKey() did not return expected error for test case %v: got %v, but want nil", tc.name, err)
 			}
@@ -120,26 +120,26 @@ func TestPublicKey(t *testing.T) {
 func TestSigAlg(t *testing.T) {
 	testCases := []struct {
 		annotations map[string]any
-		expected    SigningAlgorithm
+		expected    signingAlgorithm
 	}{
 		{
-			annotations: map[string]any{sigAlg: "RSASSA_PSS_SHA256"},
-			expected:    RSASSA_PSS_SHA256,
+			annotations: map[string]any{sigAlgURL: "RSASSA_PSS_SHA256"},
+			expected:    rsassa_pss_sha256,
 		},
 		{
-			annotations: map[string]any{sigAlg: "RSASSA_PKCS1V15_SHA256"},
-			expected:    RSASSA_PKCS1V15_SHA256,
+			annotations: map[string]any{sigAlgURL: "RSASSA_PKCS1V15_SHA256"},
+			expected:    rsasaa_pkcs1v15_sha256,
 		},
 		{
-			annotations: map[string]any{sigAlg: "ECDSA_P256_SHA256"},
-			expected:    ECDSA_P256_SHA256,
+			annotations: map[string]any{sigAlgURL: "ECDSA_P256_SHA256"},
+			expected:    ecdsa_p256_sha256,
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.annotations[sigAlg].(string), func(t *testing.T) {
+		t.Run(tc.annotations[sigAlgURL].(string), func(t *testing.T) {
 			testPayload.Optional = tc.annotations
-			gotSigAlg, err := testPayload.SigAlg()
+			gotSigAlg, err := testPayload.sigAlg()
 			if err != nil {
 				t.Errorf("SigAlg() returned error %v", err)
 			}
@@ -156,24 +156,24 @@ func TestSigAlgError(t *testing.T) {
 	testCases := []struct {
 		name        string
 		annotations map[string]any
-		expected    SigningAlgorithm
+		expected    signingAlgorithm
 	}{
 		{
 			name:        "cosign payload SigAlg() failed with no signing algorithm found",
 			annotations: nil,
-			expected:    UNSPECIFIED,
+			expected:    unspecified,
 		},
 		{
 			name:        "cosign payload SigAlg() failed with unsupported signing algorithm",
-			annotations: map[string]any{sigAlg: "unsupported signing algorithm"},
-			expected:    UNSPECIFIED,
+			annotations: map[string]any{sigAlgURL: "unsupported signing algorithm"},
+			expected:    unspecified,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			testPayload.Optional = tc.annotations
-			gotSigAlg, err := testPayload.SigAlg()
+			gotSigAlg, err := testPayload.sigAlg()
 			if err == nil {
 				t.Error("SigAlg() returned successfully, expected error", err)
 			}

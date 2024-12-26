@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	// CosEventType indicates the CELR event is a COS content
+	// COSEventType indicates the CELR event is a COS content
 	// TODO: the value needs to be reserved in the CEL spec
-	CosEventType uint8 = 80
-	// CosEventPCR is the PCR which should be used for CosEventType events.
-	CosEventPCR = 13
-	// CosRTMR is the RTMR to be extended for COS events
+	COSEventType uint8 = 80
+	// EventPCRIndex is the PCR which should be used for CosEventType events.
+	EventPCRIndex = 13
+	// EventRTMRIndex is the RTMR to be extended for COS events
 	// According to https://uefi.org/specs/UEFI/2.10/38_Confidential_Computing.html
 	// CCELMRIndex      TDX Register
 	// 0                   MRTD
@@ -25,17 +25,17 @@ const (
 	// 3                   RTMR[2]
 	// So:
 	// 4                   RTMR[3]
-	CosRTMR = 3
-	// CosCCELMRIndex is the CCMR index to use in eventlog for COS events.
-	CosCCELMRIndex = 4
+	EventRTMRIndex = 3
+	// COSCCELMRIndex is the CCMR index to use in eventlog for COS events.
+	COSCCELMRIndex = 4
 )
 
-// CosType represent a COS content type in a CEL record content.
-type CosType uint8
+// COSType represent a COS content type in a CEL record content.
+type COSType uint8
 
 // Type for COS nested events
 const (
-	ImageRefType CosType = iota
+	ImageRefType COSType = iota
 	ImageDigestType
 	RestartPolicyType
 	ImageIDType
@@ -48,29 +48,29 @@ const (
 	MemoryMonitorType
 )
 
-// CosTlv is a specific event type created for the COS (Google Container-Optimized OS),
+// COSTLV is a specific event type created for the COS (Google Container-Optimized OS),
 // used as a CEL content.
-type CosTlv struct {
-	EventType    CosType
+type COSTLV struct {
+	EventType    COSType
 	EventContent []byte
 }
 
 // GetTLV returns the TLV representation of the COS TLV.
-func (c CosTlv) GetTLV() (cel.TLV, error) {
+func (c COSTLV) GetTLV() (cel.TLV, error) {
 	data, err := cel.TLV{uint8(c.EventType), c.EventContent}.MarshalBinary()
 	if err != nil {
 		return cel.TLV{}, err
 	}
 
 	return cel.TLV{
-		Type:  CosEventType,
+		Type:  COSEventType,
 		Value: data,
 	}, nil
 }
 
 // GenerateDigest generates the digest for the given COS TLV. The whole TLV struct will
 // be marshaled to bytes and feed into the hash algo.
-func (c CosTlv) GenerateDigest(hashAlgo crypto.Hash) ([]byte, error) {
+func (c COSTLV) GenerateDigest(hashAlgo crypto.Hash) ([]byte, error) {
 	contentTLV, err := c.GetTLV()
 	if err != nil {
 		return nil, err
@@ -88,23 +88,23 @@ func (c CosTlv) GenerateDigest(hashAlgo crypto.Hash) ([]byte, error) {
 	return hash.Sum(nil), nil
 }
 
-// ParseToCosTlv constructs a CosTlv from t. It will check for the correct COS event
+// ParseToCOSTLV constructs a CosTlv from t. It will check for the correct COS event
 // type, and unmarshal the nested event.
-func ParseToCosTlv(t cel.TLV) (CosTlv, error) {
-	if !IsCosTlv(t) {
-		return CosTlv{}, fmt.Errorf("TLV type %v is not a COS event", t.Type)
+func ParseToCOSTLV(t cel.TLV) (COSTLV, error) {
+	if !IsCOSTLV(t) {
+		return COSTLV{}, fmt.Errorf("TLV type %v is not a COS event", t.Type)
 	}
 	nestedEvent := cel.TLV{}
 	err := nestedEvent.UnmarshalBinary(t.Value)
 	if err != nil {
-		return CosTlv{}, err
+		return COSTLV{}, err
 	}
-	return CosTlv{CosType(nestedEvent.Type), nestedEvent.Value}, nil
+	return COSTLV{COSType(nestedEvent.Type), nestedEvent.Value}, nil
 }
 
-// IsCosTlv check whether t is a COS TLV by its Type value.
-func IsCosTlv(t cel.TLV) bool {
-	return t.Type == CosEventType
+// IsCOSTLV check whether t is a COS TLV by its Type value.
+func IsCOSTLV(t cel.TLV) bool {
+	return t.Type == COSEventType
 }
 
 // FormatEnvVar takes in an environment variable name and its value, run some checks. Concats

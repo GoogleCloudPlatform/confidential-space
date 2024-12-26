@@ -14,7 +14,7 @@ import (
 type ImageSignature struct {
 	Payload   []byte
 	Signature []byte
-	Alg       SigningAlgorithm
+	Alg       signingAlgorithm
 }
 
 const maxSignatureCount = 300
@@ -86,12 +86,12 @@ func verifySignature(imageDigest string, sig *ImageSignature) error {
 		return fmt.Errorf("failed to unmarshal payload: %v", err)
 	}
 
-	publicKey, err := payload.PublicKey()
+	publicKey, err := payload.publicKey()
 	if err != nil {
 		return err
 	}
 
-	sigAlg, err := payload.SigAlg()
+	sigAlg, err := payload.sigAlg()
 	if err != nil {
 		return err
 	}
@@ -119,13 +119,13 @@ func verifySignature(imageDigest string, sig *ImageSignature) error {
 }
 
 // createPublicKeysetHandle takes in the given PEM-encoded public key and creates a public keyset handle based on the signing algorithm.
-func createPublicKeysetHandle(publicKey []byte, sigAlg SigningAlgorithm) (*keyset.Handle, error) {
+func createPublicKeysetHandle(publicKey []byte, sigAlg signingAlgorithm) (*keyset.Handle, error) {
 	switch sigAlg {
-	case ECDSA_P256_SHA256:
+	case ecdsa_p256_sha256:
 		return convert.PemToECDSAP256Sha256WithDEREncodingKeysetHandle(publicKey)
-	case RSASSA_PKCS1V15_SHA256:
+	case rsasaa_pkcs1v15_sha256:
 		return convert.PemToRsaSsaPkcs1Sha256KeysetHandle(publicKey)
-	case RSASSA_PSS_SHA256:
+	case rsassa_pss_sha256:
 		return convert.PemToRsaSsaPssSha256KeysetHandle(publicKey)
 	default:
 		return nil, fmt.Errorf("unsupported signing algorithm: %v", sigAlg)

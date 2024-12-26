@@ -18,22 +18,22 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 
 	// add events
 	testCELEvents := []struct {
-		cosNestedEventType coscel.CosType
+		cosNestedEventType coscel.COSType
 		register           int
 		eventPayload       []byte
 	}{
-		{coscel.ImageRefType, coscel.CosRTMR, []byte("docker.io/bazel/experimental/test:latest")},
-		{coscel.ImageDigestType, coscel.CosRTMR, []byte("sha256:781d8dfdd92118436bd914442c8339e653b83f6bf3c1a7a98efcfb7c4fed7483")},
-		{coscel.RestartPolicyType, coscel.CosRTMR, []byte(attestpb.RestartPolicy_Always.String())},
-		{coscel.ImageIDType, coscel.CosRTMR, []byte("sha256:5DF4A1AC347DCF8CF5E9D0ABC04B04DB847D1B88D3B1CC1006F0ACB68E5A1F4B")},
-		{coscel.EnvVarType, coscel.CosRTMR, []byte("foo=bar")},
-		{coscel.EnvVarType, coscel.CosRTMR, []byte("bar=baz")},
-		{coscel.EnvVarType, coscel.CosRTMR, []byte("baz=foo=bar")},
-		{coscel.EnvVarType, coscel.CosRTMR, []byte("empty=")},
-		{coscel.ArgType, coscel.CosRTMR, []byte("--x")},
-		{coscel.ArgType, coscel.CosRTMR, []byte("--y")},
-		{coscel.ArgType, coscel.CosRTMR, []byte("")},
-		{coscel.MemoryMonitorType, coscel.CosRTMR, []byte{1}},
+		{coscel.ImageRefType, coscel.EventRTMRIndex, []byte("docker.io/bazel/experimental/test:latest")},
+		{coscel.ImageDigestType, coscel.EventRTMRIndex, []byte("sha256:781d8dfdd92118436bd914442c8339e653b83f6bf3c1a7a98efcfb7c4fed7483")},
+		{coscel.RestartPolicyType, coscel.EventRTMRIndex, []byte(attestpb.RestartPolicy_Always.String())},
+		{coscel.ImageIDType, coscel.EventRTMRIndex, []byte("sha256:5DF4A1AC347DCF8CF5E9D0ABC04B04DB847D1B88D3B1CC1006F0ACB68E5A1F4B")},
+		{coscel.EnvVarType, coscel.EventRTMRIndex, []byte("foo=bar")},
+		{coscel.EnvVarType, coscel.EventRTMRIndex, []byte("bar=baz")},
+		{coscel.EnvVarType, coscel.EventRTMRIndex, []byte("baz=foo=bar")},
+		{coscel.EnvVarType, coscel.EventRTMRIndex, []byte("empty=")},
+		{coscel.ArgType, coscel.EventRTMRIndex, []byte("--x")},
+		{coscel.ArgType, coscel.EventRTMRIndex, []byte("--y")},
+		{coscel.ArgType, coscel.EventRTMRIndex, []byte("")},
+		{coscel.MemoryMonitorType, coscel.EventRTMRIndex, []byte{1}},
 	}
 
 	expectedEnvVars := make(map[string]string)
@@ -58,9 +58,9 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 	fakeRTMR := fakertmr.CreateRtmrSubsystem(t.TempDir())
 
 	for _, testEvent := range testCELEvents {
-		cosEvent := coscel.CosTlv{EventType: testEvent.cosNestedEventType, EventContent: testEvent.eventPayload}
+		cosEvent := coscel.COSTLV{EventType: testEvent.cosNestedEventType, EventContent: testEvent.eventPayload}
 
-		err := cos_event_log.AppendEvent(cosEvent, []crypto.Hash{crypto.SHA384}, coscel.CosCCELMRIndex, func(_ crypto.Hash, ccmrIdx int, dgst []byte) error {
+		err := cos_event_log.AppendEvent(cosEvent, []crypto.Hash{crypto.SHA384}, coscel.COSCCELMRIndex, func(_ crypto.Hash, ccmrIdx int, dgst []byte) error {
 			return rtmr.ExtendDigestClient(fakeRTMR, ccmrIdx-1, dgst)
 		})
 		// err := cos_event_log.AppendEventRTMR(fakeRTMR, testEvent.register, cosEvent);
@@ -69,7 +69,7 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 		}
 	}
 
-	cosState, err := VerifiedCosState(cos_event_log, uint8(cel.CCMRType))
+	cosState, err := VerifiedCOSState(cos_event_log, uint8(cel.CCMRType))
 	if err != nil {
 		t.Error(err)
 	}

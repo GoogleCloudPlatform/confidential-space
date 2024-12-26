@@ -47,21 +47,21 @@ JwIDAQAB
 )
 
 // base64-encoded signatures over byte slices of the corresponding payloads:
-var base64Sigs = map[SigningAlgorithm]string{
+var base64Sigs = map[signingAlgorithm]string{
 	// openssl dgst -sign ec_private.pem -sha256 | base64
-	ECDSA_P256_SHA256: "MEUCIDWVapx3r93lFmKRR3v2AzYUui2Pdur3AYSYkiicZKcEAiEAj3GC2+1JdRXxypXrUmTqtFrPxneCY3jQAdqoCDmjVx0=",
+	ecdsa_p256_sha256: "MEUCIDWVapx3r93lFmKRR3v2AzYUui2Pdur3AYSYkiicZKcEAiEAj3GC2+1JdRXxypXrUmTqtFrPxneCY3jQAdqoCDmjVx0=",
 	// openssl dgst -sign rsa_private.pem -sha256 | base64
-	RSASSA_PKCS1V15_SHA256: "PxShLjtQfmju/mKLtHJ5gsX1M8nlkEv2uYpKuNvVeANSrH3Px4hAOw302G2YLPaLRMcsBnLKIVL4lHr0FqqDQluVj/eJJ+PHvcmSltbLhCvw2f1ZTjt/NcgThfL5gpywgAHVXSYESettaCezWsPvRlyf6vypKMbnaO8D6gWX96hAiAFdHbTnVlpQ5rBjbyErx5NkyZhaGPOqXk6FAtZDHFy7Cg+vaq9wItZzp/7+JC7dEIRQel9xSKYUKIG4W563Q/7i8DGMg+rETOxgpBR9oco3QNev7YIuDUd++Dk3M/Wv9b1u6I9aqBdVe86TU+5Ur2nyNxw9chzhNmtdu5zTyA==",
+	rsasaa_pkcs1v15_sha256: "PxShLjtQfmju/mKLtHJ5gsX1M8nlkEv2uYpKuNvVeANSrH3Px4hAOw302G2YLPaLRMcsBnLKIVL4lHr0FqqDQluVj/eJJ+PHvcmSltbLhCvw2f1ZTjt/NcgThfL5gpywgAHVXSYESettaCezWsPvRlyf6vypKMbnaO8D6gWX96hAiAFdHbTnVlpQ5rBjbyErx5NkyZhaGPOqXk6FAtZDHFy7Cg+vaq9wItZzp/7+JC7dEIRQel9xSKYUKIG4W563Q/7i8DGMg+rETOxgpBR9oco3QNev7YIuDUd++Dk3M/Wv9b1u6I9aqBdVe86TU+5Ur2nyNxw9chzhNmtdu5zTyA==",
 	// openssl dgst -sign rsa_private.pem -sigopt rsa_padding_mode:pss -sha256 | base64
-	RSASSA_PSS_SHA256: "egqyxSJnAqS/GJ0ryeL2RXz2xCl53ynSt2Nk09VjP20IffO3uAjMsfneJOQjOljJRzMknsp4S0yr7E+6pBIi9x3Qkcs+KTpUNMpEAtXhn/qloE1SUx/j7uTUSQBkaxnlQvwrmMup+PChDNL6aRRfzEiV/rmywAicWCS4kLtHXNFOcV3emd1t3Vzp00ywfGFKjTzFnJlyxsLjO+uEsYlpUWjGaJ4n2f0wOthEGHH02wVEYNHS5wEYpu0GbcaL7C3pdBsYfpQHZWhHTNcalLBASbQ5ienMn17ZDm0bXplEbtjd2hj+xFIy0iKD39YV94vtsA0yjIkRSiXHVCWEKKWIUA==",
+	rsassa_pss_sha256: "egqyxSJnAqS/GJ0ryeL2RXz2xCl53ynSt2Nk09VjP20IffO3uAjMsfneJOQjOljJRzMknsp4S0yr7E+6pBIi9x3Qkcs+KTpUNMpEAtXhn/qloE1SUx/j7uTUSQBkaxnlQvwrmMup+PChDNL6aRRfzEiV/rmywAicWCS4kLtHXNFOcV3emd1t3Vzp00ywfGFKjTzFnJlyxsLjO+uEsYlpUWjGaJ4n2f0wOthEGHH02wVEYNHS5wEYpu0GbcaL7C3pdBsYfpQHZWhHTNcalLBASbQ5ienMn17ZDm0bXplEbtjd2hj+xFIy0iKD39YV94vtsA0yjIkRSiXHVCWEKKWIUA==",
 }
 
-func decodedSig(t *testing.T, alg SigningAlgorithm) []byte {
+func decodedSig(t *testing.T, alg signingAlgorithm) []byte {
 	t.Helper()
 
 	sigBytes, err := encoding.DecodeString(base64Sigs[alg])
 	if err != nil {
-		t.Fatalf("encoding.DecodeString(%q) failed: %v", alg.String(), err)
+		t.Fatalf("encoding.DecodeString(%q) failed: %v", alg.string(), err)
 	}
 
 	return sigBytes
@@ -176,22 +176,22 @@ func TestVerifySignature(t *testing.T) {
 	testCases := []struct {
 		name      string
 		publicKey string
-		sigAlg    SigningAlgorithm
+		sigAlg    signingAlgorithm
 	}{
 		{
 			name:      "ECDSA",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ECDSA_P256_SHA256,
+			sigAlg:    ecdsa_p256_sha256,
 		},
 		{
 			name:      "RSASSAPKCS1V15",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PKCS1V15_SHA256,
+			sigAlg:    rsasaa_pkcs1v15_sha256,
 		},
 		{
 			name:      "RSASSAPSS",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PSS_SHA256,
+			sigAlg:    rsassa_pss_sha256,
 		},
 	}
 
@@ -199,7 +199,7 @@ func TestVerifySignature(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			encodedPubKey := unpaddedEncoding.EncodeToString([]byte(tc.publicKey))
 			signature := &ImageSignature{
-				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.String())),
+				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: decodedSig(t, tc.sigAlg),
 			}
 			if err := verifySignature(validImageDigest, signature); err != nil {
@@ -216,22 +216,22 @@ func TestVerifySignatureWithInvalidDigest(t *testing.T) {
 	testCases := []struct {
 		name      string
 		publicKey string
-		sigAlg    SigningAlgorithm
+		sigAlg    signingAlgorithm
 	}{
 		{
 			name:      "ECDSA",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ECDSA_P256_SHA256,
+			sigAlg:    ecdsa_p256_sha256,
 		},
 		{
 			name:      "RSASSAPKCS1V15",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PKCS1V15_SHA256,
+			sigAlg:    rsasaa_pkcs1v15_sha256,
 		},
 		{
 			name:      "RSASSAPSS",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PSS_SHA256,
+			sigAlg:    rsassa_pss_sha256,
 		},
 	}
 
@@ -239,7 +239,7 @@ func TestVerifySignatureWithInvalidDigest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			encodedPubKey := unpaddedEncoding.EncodeToString([]byte(tc.publicKey))
 			signature := &ImageSignature{
-				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.String())),
+				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: decodedSig(t, tc.sigAlg),
 			}
 			if err := verifySignature(invalidDigest, signature); !strings.Contains(err.Error(), expectErr) {
@@ -260,22 +260,22 @@ func TestVerifySignatureWithInvalidSignature(t *testing.T) {
 	testCases := []struct {
 		name      string
 		publicKey string
-		sigAlg    SigningAlgorithm
+		sigAlg    signingAlgorithm
 	}{
 		{
 			name:      "ECDSA",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ECDSA_P256_SHA256,
+			sigAlg:    ecdsa_p256_sha256,
 		},
 		{
 			name:      "RSASSAPKCS1V15",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PKCS1V15_SHA256,
+			sigAlg:    rsasaa_pkcs1v15_sha256,
 		},
 		{
 			name:      "RSASSAPSS",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PSS_SHA256,
+			sigAlg:    rsassa_pss_sha256,
 		},
 	}
 
@@ -283,7 +283,7 @@ func TestVerifySignatureWithInvalidSignature(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			encodedPubKey := unpaddedEncoding.EncodeToString([]byte(tc.publicKey))
 			signature := &ImageSignature{
-				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.String())),
+				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: []byte(invalidSig),
 			}
 			if err := verifySignature(validImageDigest, signature); !strings.Contains(err.Error(), expectErr) {
@@ -312,43 +312,43 @@ SQIDAQAB
 	testCases := []struct {
 		name      string
 		publicKey string
-		sigAlg    SigningAlgorithm
+		sigAlg    signingAlgorithm
 		expectErr string
 	}{
 		{
 			name:      "ECDSA with mismatched key",
 			publicKey: mismatchedECDSA,
-			sigAlg:    ECDSA_P256_SHA256,
+			sigAlg:    ecdsa_p256_sha256,
 			expectErr: "invalid signature",
 		},
 		{
 			name:      "RSASSA_PKCS1V15_SHA256 with mismatched key",
 			publicKey: mismatchedRSA,
-			sigAlg:    RSASSA_PKCS1V15_SHA256,
+			sigAlg:    rsasaa_pkcs1v15_sha256,
 			expectErr: "invalid signature",
 		},
 		{
 			name:      "RSASSA_PSS_SHA256 with mismatched key",
 			publicKey: mismatchedRSA,
-			sigAlg:    RSASSA_PSS_SHA256,
+			sigAlg:    rsassa_pss_sha256,
 			expectErr: "invalid signature",
 		},
 		{
 			name:      "ECDSA with RSA key",
 			publicKey: rsaPubKey,
-			sigAlg:    ECDSA_P256_SHA256,
+			sigAlg:    ecdsa_p256_sha256,
 			expectErr: "public key is not an ECDSA public key",
 		},
 		{
 			name:      "RSASSA_PKCS1V15_SHA256 with ECDSA key",
 			publicKey: ecdsaPubKey,
-			sigAlg:    RSASSA_PKCS1V15_SHA256,
+			sigAlg:    rsasaa_pkcs1v15_sha256,
 			expectErr: "public key is not a RSA public key",
 		},
 		{
 			name:      "RSASSA_PSS_SHA256 with ECDSA key",
 			publicKey: ecdsaPubKey,
-			sigAlg:    RSASSA_PSS_SHA256,
+			sigAlg:    rsassa_pss_sha256,
 			expectErr: "public key is not a RSA public key",
 		},
 	}
@@ -357,7 +357,7 @@ SQIDAQAB
 		t.Run(tc.name, func(t *testing.T) {
 			encodedPubKey := unpaddedEncoding.EncodeToString([]byte(tc.publicKey))
 			signature := &ImageSignature{
-				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.String())),
+				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: decodedSig(t, tc.sigAlg),
 			}
 			if err := verifySignature(validImageDigest, signature); !strings.Contains(err.Error(), tc.expectErr) {
@@ -371,31 +371,31 @@ func TestCreatePublicKeysetHandle(t *testing.T) {
 	testCases := []struct {
 		name      string
 		publicKey string
-		sigAlg    SigningAlgorithm
+		sigAlg    signingAlgorithm
 		wantPass  bool
 	}{
 		{
 			name:      "RSASSA_PKCS1V15_SHA256 createPublicKeyset",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PKCS1V15_SHA256,
+			sigAlg:    rsasaa_pkcs1v15_sha256,
 			wantPass:  true,
 		},
 		{
 			name:      "RSASSA_PSS_SHA256 createPublicKeyset",
 			publicKey: rsaPubKey,
-			sigAlg:    RSASSA_PSS_SHA256,
+			sigAlg:    rsassa_pss_sha256,
 			wantPass:  true,
 		},
 		{
 			name:      "ECDSA_P256_SHA256 createPublicKeyset",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ECDSA_P256_SHA256,
+			sigAlg:    ecdsa_p256_sha256,
 			wantPass:  true,
 		},
 		{
 			name:      "createPublicKeyset failed with unspecified signing algorithm",
 			publicKey: rsaPubKey,
-			sigAlg:    UNSPECIFIED,
+			sigAlg:    unspecified,
 			wantPass:  false,
 		},
 	}

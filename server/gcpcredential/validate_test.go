@@ -23,8 +23,8 @@ import (
 const testAudience = "testaud"
 const testKeyID = "testkid"
 
-func TestGoogleCACerts(t *testing.T) {
-	if _, err := googleCACerts(); err != nil {
+func TestDefaultHTTPClient(t *testing.T) {
+	if _, err := defaultHTTPClient(); err != nil {
 		t.Errorf("GoogleCACerts() returned error %v", nil)
 	}
 }
@@ -85,21 +85,19 @@ func (t *jwkFetcher) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.jwkFunc(req), nil
 }
 
-func testJWKFetcher(t *testing.T, jwks *JWKS) *jwkFetcher {
+func jwkFetchFunc(t *testing.T, jwks *JWKS) func(req *http.Request) *http.Response {
 	t.Helper()
-	return &jwkFetcher{
-		jwkFunc: func(req *http.Request) *http.Response {
-			respBytes, err := json.Marshal(jwks)
-			if err != nil {
-				t.Fatalf("Unable to marshal server response: %v", err)
-			}
+	return func(req *http.Request) *http.Response {
+		respBytes, err := json.Marshal(jwks)
+		if err != nil {
+			t.Fatalf("Unable to marshal server response: %v", err)
+		}
 
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     make(http.Header),
-				Body:       ioutil.NopCloser(bytes.NewBuffer(respBytes)),
-			}
-		},
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       ioutil.NopCloser(bytes.NewBuffer(respBytes)),
+		}
 	}
 }
 
@@ -115,7 +113,7 @@ func TestValidation(t *testing.T) {
 	}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
+	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
 	// Validate.
 	emails, err := Validate(context.Background(), validatorClient, testTokens, testAudience)
@@ -138,12 +136,12 @@ func TestValidation(t *testing.T) {
 	}
 }
 
-func TestValidationError(t *testing.T) {
+func TestValidateFailsWithInvalidToken(t *testing.T) {
 	_, jwk := testRSASigner(t, testKeyID)
 	jwks := &JWKS{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
+	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
 	// Validate.
 	if _, err := Validate(context.Background(), validatorClient, []string{"fake.test.token"}, testAudience); err == nil {
@@ -161,7 +159,7 @@ func TestValidationOmitsBadToken(t *testing.T) {
 	jwks := &JWKS{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
+	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
 	validEmail := "goodtoken@test.com"
 	expectedEmails := []string{validEmail}
@@ -253,7 +251,7 @@ func TestValidateWithECDSASigner(t *testing.T) {
 	testTokens := []string{tokenString}
 
 	// Returns a hardcoded JWK for token validation.
-	validatorClient := &http.Client{Transport: testJWKFetcher(t, jwks)}
+	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
 	// Validate.
 	emails, err := Validate(context.Background(), validatorClient, testTokens, testAudience)

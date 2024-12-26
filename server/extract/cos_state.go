@@ -8,7 +8,7 @@ import (
 	pb "github.com/google/go-tpm-tools/proto/attest"
 )
 
-func VerifiedCosState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosState, error) {
+func VerifiedCOSState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosState, error) {
 	cosState := &pb.AttestedCosState{}
 	cosState.Container = &pb.ContainerState{}
 	cosState.HealthMonitoring = &pb.HealthMonitoringState{}
@@ -24,11 +24,11 @@ func VerifiedCosState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosSta
 
 		switch record.IndexType {
 		case uint8(cel.PCRType):
-			if record.Index != coscel.CosEventPCR {
+			if record.Index != coscel.EventPCRIndex {
 				return nil, fmt.Errorf("found unexpected PCR %d in COS CEL log", record.Index)
 			}
 		case uint8(cel.CCMRType):
-			if record.Index != coscel.CosCCELMRIndex {
+			if record.Index != coscel.COSCCELMRIndex {
 				return nil, fmt.Errorf("found unexpected CCELMR %d in COS CEL log", record.Index)
 			}
 		default:
@@ -40,7 +40,7 @@ func VerifiedCosState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosSta
 		// we either verify the digest of event event in this PCR, or we fail
 		// to replay the event log.
 		// TODO: See if we can fix this to have the Content Type be verified.
-		cosTlv, err := coscel.ParseToCosTlv(record.Content)
+		cosTlv, err := coscel.ParseToCOSTLV(record.Content)
 		if err != nil {
 			return nil, err
 		}

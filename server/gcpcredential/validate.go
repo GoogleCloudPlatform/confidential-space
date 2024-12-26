@@ -7,11 +7,11 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
-	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/http"
 	"time"
@@ -21,35 +21,63 @@ import (
 	"google.golang.org/api/option"
 )
 
-//go:embed data/roots.pem
-var googleCAPEM []byte
+const googleCAURL = "https://pki.goog/roots.pem"
 
 // The certificates are downloaded from https://pki.goog/faq/#faq-27.
 // Note the guidance is to update at least semi-annually.
-func googleCACerts() (*x509.CertPool, error) {
+// func googleCACerts() (*x509.CertPool, error) {
+// 	resp, err := http.Get(googleCAURL)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("Unable to retrieve Google CAs: %v", err)
+// 	}
+
+// 	bodyBytes, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("Unable to read response body: %v", err)
+// 	}
+
+// 	certs := x509.NewCertPool()
+// 	if !certs.AppendCertsFromPEM(bodyBytes) {
+// 		return nil, errors.New("failed to parse Google CA certificates")
+// 	}
+
+// 	return certs, nil
+// }
+
+func defaultHTTPClient() (*http.Client, error) {
+	resp, err := http.Get(googleCAURL)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to retrieve Google CAs: %v", err)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to read response body: %v", err)
+	}
+
 	certs := x509.NewCertPool()
-	if !certs.AppendCertsFromPEM(googleCAPEM) {
+	if !certs.AppendCertsFromPEM(bodyBytes) {
 		return nil, errors.New("failed to parse Google CA certificates")
 	}
 
-	return certs, nil
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:    certs,
+				MinVersion: tls.VersionTLS13,
+			},
+		},
+	}, nil
 }
 
 // Validate validates each of the provided credentials, then returns the emails of the successfully verified tokens/emails.
 // If an http.Client is provided, it will be used to initialize the idtoken validation client.
 func Validate(ctx context.Context, client *http.Client, credentials []string, expectedAudience string) ([]string, error) {
 	if client == nil {
-		ca, err := googleCACerts()
+		var err error
+		client, err = defaultHTTPClient()
 		if err != nil {
 			return nil, err
-		}
-		client = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:    ca,
-					MinVersion: tls.VersionTLS13,
-				},
-			},
 		}
 	}
 
@@ -178,7 +206,12 @@ func ValidateWithJWKS(jwks *JWKS, credentials []string, expectedAudience string)
 
 		// Check the expiration.
 		// Numbers need to be converted to float64 first to avoid panicking (https://stackoverflow.com/a/29690346).
-		if time.Now().Unix() > int64(claims["exp"].(float64)) {
+		exp, ok := claims["exp"].(float64)
+		if !ok {
+			return nil, errors.New("unable to convert exp claim to float64")
+		}
+
+		if time.Now().Unix() > int64(exp) {
 			return nil, errors.New("token is expired")
 		}
 
