@@ -37,8 +37,8 @@ func VerifiedCOSState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosSta
 
 		// The Content.Type is not verified at this point, so we have to fail
 		// if we see any events that we do not understand. This ensures that
-		// we either verify the digest of event event in this PCR, or we fail
-		// to replay the event log.
+		// we either verify the digest of event event in this PCR/RTMA, or we
+		// fail to replay the event log.
 		// TODO: See if we can fix this to have the Content Type be verified.
 		cosTlv, err := coscel.ParseToCOSTLV(record.Content)
 		if err != nil {

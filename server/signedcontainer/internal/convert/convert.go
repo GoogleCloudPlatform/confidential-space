@@ -1,5 +1,6 @@
 package convert
 
+// TODO: Remove this package and migrate to the Tink API when they publish it.
 import (
 	"crypto"
 	"crypto/ecdsa"
