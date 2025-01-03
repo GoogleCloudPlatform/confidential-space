@@ -17,7 +17,6 @@ import (
 type ImageSignature struct {
 	Payload   []byte
 	Signature []byte
-	Alg       signingAlgorithm
 }
 
 const maxSignatureCount = 300
