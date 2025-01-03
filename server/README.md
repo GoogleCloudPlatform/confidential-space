@@ -1,4 +1,4 @@
-### Verifier Server Utilities
+# Verifier Server Utilities
 The following module consists of utility libraries for Verifier Services
 to use when validating Confidential Space attestations.
 
@@ -66,7 +66,7 @@ if err != nil {
 ```
 
 ### Testing
-Both validation methods can be tested with the `test_with_token` binary. The program accepts one token as an argument, runs both validation methods against it and outputs the results to stdout.
+Both validation methods can be tested against a real token with the `test_with_token` binary. The program accepts one token as an argument, runs both validation methods against it and outputs the results to stdout.
 
 ```bash
 $ cd gcpcredential/test_with_token
