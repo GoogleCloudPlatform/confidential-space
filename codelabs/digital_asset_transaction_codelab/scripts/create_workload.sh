@@ -19,21 +19,21 @@ cd "${PARENT_DIR}"/src
 
 echo "Building the workload docker image ..."
 if ! docker build . -t "${IMAGE_REFERENCE}"; then
-  fatal "Failed to build workload docker image "${IMAGE_REFERENCE}"."
+  fatal "Failed to build workload docker image ${IMAGE_REFERENCE}."
 fi
 
-echo "Pushing workload docker image to artifact registry "${PRIMUS_ARTIFACT_REPOSITORY}" ..."
+echo "Pushing workload docker image to artifact registry ${PRIMUS_ARTIFACT_REPOSITORY} ..."
 if ! docker push "${IMAGE_REFERENCE}"; then
-  fatal "Failed to publish workload docker image "${IMAGE_REFERENCE}" to "${PRIMUS_ARTIFACT_REPOSITORY}"."
+  fatal "Failed to publish workload docker image ${IMAGE_REFERENCE} to ${PRIMUS_ARTIFACT_REPOSITORY}."
 fi
 
 cd "${PARENT_DIR}"/scripts
 
-echo "Granting roles/artifactregistry.reader role to workload service account "${WORKLOAD_SERVICEACCOUNT}" ..."
+echo "Granting roles/artifactregistry.reader role to workload service account ${WORKLOAD_SERVICEACCOUNT} ..."
 if ! gcloud artifacts repositories add-iam-policy-binding "${PRIMUS_ARTIFACT_REPOSITORY}" \
   --project="${PRIMUS_PROJECT_ID}" \
   --role=roles/artifactregistry.reader \
   --location="${PRIMUS_PROJECT_REPOSITORY_REGION}" \
   --member="serviceAccount:"${WORKLOAD_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com"; then
-  err "Failed to grant roles/artifactregistry.reader role to workload service account "${WORKLOAD_SERVICEACCOUNT}""
+  err "Failed to grant roles/artifactregistry.reader role to workload service account ${WORKLOAD_SERVICEACCOUNT}"
 fi
