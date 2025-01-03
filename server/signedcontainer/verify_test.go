@@ -68,7 +68,7 @@ func decodedSig(t *testing.T, alg signingAlgorithm) []byte {
 }
 
 // CreateTestContainerImageSignature creates a valid container image signature.
-func testSig(t *testing.T) *ImageSignature {
+func testSig(t *testing.T) (*ImageSignature, *VerifiedSignature) {
 	t.Helper()
 	// base64-encoded signature over the given payload:
 	// openssl dgst -sign ec_private.pem -sha256 | base64
@@ -78,12 +78,25 @@ func testSig(t *testing.T) *ImageSignature {
 		t.Fatalf("Error decoding base64 signature (%s): %v", base64Sig, err)
 	}
 	testPayloadFmt := `{"critical":{"identity":{"docker-reference":"us-docker.pkg.dev/confidential-space-images-dev/cs-cosign-tests/base"},"image":{"docker-manifest-digest":"sha256:9494e567c7c44e8b9f8808c1658a47c9b7979ef3cceef10f48754fc2706802ba"},"type":"cosign container image signature"},"optional":{"dev.cosignproject.cosign/pub": "%s","dev.cosignproject.cosign/sigalg": "%s"}}`
-	encodedPubKey := base64.RawStdEncoding.EncodeToString([]byte(testPubKey))
-	validSig := &ImageSignature{
-		Payload:   []byte(fmt.Sprintf(testPayloadFmt, encodedPubKey, "ECDSA_P256_SHA256")),
-		Signature: sigBytes,
+
+	keyData := []byte(testPubKey)
+	encodedPubKey := base64.RawStdEncoding.EncodeToString(keyData)
+
+	keyID, err := computeKeyID(keyData)
+	if err != nil {
+		t.Fatal(err)
 	}
-	return validSig
+
+	sigAlg := "ECDSA_P256_SHA256"
+
+	return &ImageSignature{
+			Payload:   []byte(fmt.Sprintf(testPayloadFmt, encodedPubKey, sigAlg)),
+			Signature: sigBytes,
+		}, &VerifiedSignature{
+			KeyID:     keyID,
+			Signature: base64.StdEncoding.EncodeToString(sigBytes),
+			Alg:       sigAlg,
+		}
 }
 
 func TestVerify(t *testing.T) {
@@ -91,20 +104,20 @@ func TestVerify(t *testing.T) {
 		Payload:   []byte("invalid payload"),
 		Signature: []byte("invalid signature"),
 	}
-	validSignature := testSig(t)
+	validImageSig, validVerifiedSig := testSig(t)
 
 	testCases := []struct {
 		name                     string
 		imageDigest              string
 		containerImageSignatures []*ImageSignature
-		expectedSignatures       []*ImageSignature
+		expectedSignatures       []*VerifiedSignature
 		numExpectedErrors        int
 	}{
 		{
 			name:                     "valid signatures",
 			imageDigest:              validImageDigest,
-			containerImageSignatures: []*ImageSignature{validSignature},
-			expectedSignatures:       []*ImageSignature{validSignature},
+			containerImageSignatures: []*ImageSignature{validImageSig},
+			expectedSignatures:       []*VerifiedSignature{validVerifiedSig},
 			numExpectedErrors:        0,
 		},
 		{
@@ -131,14 +144,14 @@ func TestVerify(t *testing.T) {
 		{
 			name:                     "valid, invalid, and nil signatures",
 			imageDigest:              validImageDigest,
-			containerImageSignatures: []*ImageSignature{validSignature, invalidSignature, nil},
-			expectedSignatures:       []*ImageSignature{validSignature},
+			containerImageSignatures: []*ImageSignature{validImageSig, invalidSignature, nil},
+			expectedSignatures:       []*VerifiedSignature{validVerifiedSig},
 			numExpectedErrors:        2,
 		},
 		{
 			name:                     "mismatched image digest",
 			imageDigest:              "sha256:845f77fab71033404f4cfceaa1ddb27b70c3551ceb22a5e7f4498cdda6c9daea",
-			containerImageSignatures: []*ImageSignature{validSignature},
+			containerImageSignatures: []*ImageSignature{validImageSig},
 			expectedSignatures:       nil,
 			numExpectedErrors:        1,
 		},
@@ -202,7 +215,7 @@ func TestVerifySignature(t *testing.T) {
 				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: decodedSig(t, tc.sigAlg),
 			}
-			if err := verifySignature(validImageDigest, signature); err != nil {
+			if _, err := verifySignature(validImageDigest, signature); err != nil {
 				t.Errorf("verifySignature() failed: %v", err)
 			}
 		})
@@ -242,7 +255,7 @@ func TestVerifySignatureWithInvalidDigest(t *testing.T) {
 				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: decodedSig(t, tc.sigAlg),
 			}
-			if err := verifySignature(invalidDigest, signature); !strings.Contains(err.Error(), expectErr) {
+			if _, err := verifySignature(invalidDigest, signature); !strings.Contains(err.Error(), expectErr) {
 				t.Errorf("VerifyContainerImageSignature() failed: got error [%v], but want error [%v]", err.Error(), expectErr)
 			}
 		})
@@ -286,7 +299,7 @@ func TestVerifySignatureWithInvalidSignature(t *testing.T) {
 				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: []byte(invalidSig),
 			}
-			if err := verifySignature(validImageDigest, signature); !strings.Contains(err.Error(), expectErr) {
+			if _, err := verifySignature(validImageDigest, signature); !strings.Contains(err.Error(), expectErr) {
 				t.Errorf("VerifyContainerImageSignature() failed: got error [%v], but want error [%v]", err.Error(), expectErr)
 			}
 		})
@@ -360,7 +373,7 @@ SQIDAQAB
 				Payload:   []byte(fmt.Sprintf(payloadFmt, encodedPubKey, tc.sigAlg.string())),
 				Signature: decodedSig(t, tc.sigAlg),
 			}
-			if err := verifySignature(validImageDigest, signature); !strings.Contains(err.Error(), tc.expectErr) {
+			if _, err := verifySignature(validImageDigest, signature); !strings.Contains(err.Error(), tc.expectErr) {
 				t.Errorf("VerifyContainerImageSignature() failed: got error [%v], but want error [%v]", err.Error(), tc.expectErr)
 			}
 		})

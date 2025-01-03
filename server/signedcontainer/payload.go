@@ -115,12 +115,12 @@ func (p *payload) sigAlg() (signingAlgorithm, error) {
 
 // UnmarshalAndValidate unmarshals a payload from JSON and performs checks on the payload.
 func unmarshalAndValidate(data []byte) (*payload, error) {
-	var payload payload
-	if err := json.Unmarshal(data, &payload); err != nil {
+	var pl payload
+	if err := json.Unmarshal(data, &pl); err != nil {
 		return nil, err
 	}
-	if payload.Critical.Type != criticalType {
-		return nil, fmt.Errorf("unknown critical type for Cosign signature payload: %s", payload.Critical.Type)
+	if pl.Critical.Type != criticalType {
+		return nil, fmt.Errorf("unknown critical type for Cosign signature payload: %s", pl.Critical.Type)
 	}
-	return &payload, nil
+	return &pl, nil
 }
