@@ -23,27 +23,7 @@ import (
 
 const googleCAURL = "https://pki.goog/roots.pem"
 
-// The certificates are downloaded from https://pki.goog/faq/#faq-27.
-// Note the guidance is to update at least semi-annually.
-// func googleCACerts() (*x509.CertPool, error) {
-// 	resp, err := http.Get(googleCAURL)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("Unable to retrieve Google CAs: %v", err)
-// 	}
-
-// 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("Unable to read response body: %v", err)
-// 	}
-
-// 	certs := x509.NewCertPool()
-// 	if !certs.AppendCertsFromPEM(bodyBytes) {
-// 		return nil, errors.New("failed to parse Google CA certificates")
-// 	}
-
-// 	return certs, nil
-// }
-
+// See https://pki.goog/faq/#faq-27 for more information about Google CAs.
 func defaultHTTPClient() (*http.Client, error) {
 	resp, err := http.Get(googleCAURL)
 	if err != nil {
