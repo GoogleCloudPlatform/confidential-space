@@ -23,6 +23,8 @@ github.com/google/go-configfs-tsm v0.3.3-0.20240910040719-1cc7e25d9272 h1:ut0AQw
 github.com/google/go-configfs-tsm v0.3.3-0.20240910040719-1cc7e25d9272/go.mod h1:EL1GTDFMb5PZQWDviGfZV9n87WeGTR/JUg13RfwkgRo=
 github.com/google/go-eventlog v0.0.2-0.20241213203620-f921bdc3aeb0 h1:270O3tFxca1lAXm3JVWqUU4fHlK3EEIEYIfk4koWMkM=
 github.com/google/go-eventlog v0.0.2-0.20241213203620-f921bdc3aeb0/go.mod h1:7huE5P8w2NTObSwSJjboHmB7ioBNblkijdzoVa2skfQ=
+github.com/google/go-eventlog v0.0.2-0.20250106195339-f984981ba6b8 h1:4b/IJ0FCX76AFQpf2YII+iLdA5Vh0EKAbUcFynR9xR8=
+github.com/google/go-eventlog v0.0.2-0.20250106195339-f984981ba6b8/go.mod h1:7huE5P8w2NTObSwSJjboHmB7ioBNblkijdzoVa2skfQ=
 github.com/google/go-sev-guest v0.9.3 h1:GOJ+EipURdeWFl/YYdgcCxyPeMgQUWlI056iFkBD8UU=
 github.com/google/go-sev-guest v0.9.3/go.mod h1:hc1R4R6f8+NcJwITs0L90fYWTsBpd1Ix+Gur15sqHDs=
 github.com/google/go-tdx-guest v0.3.2-0.20241217050406-c121d9d550ac h1:uaLKf0TX0KLO6ugpbEYluqXuO905NZiqqd5Q6t3pkSY=

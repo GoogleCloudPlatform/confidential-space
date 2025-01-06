@@ -56,7 +56,7 @@ type COSTLV struct {
 }
 
 // GetTLV returns the TLV representation of the COS TLV.
-func (c COSTLV) GetTLV() (cel.TLV, error) {
+func (c COSTLV) TLV() (cel.TLV, error) {
 	data, err := cel.TLV{uint8(c.EventType), c.EventContent}.MarshalBinary()
 	if err != nil {
 		return cel.TLV{}, err
@@ -71,7 +71,7 @@ func (c COSTLV) GetTLV() (cel.TLV, error) {
 // GenerateDigest generates the digest for the given COS TLV. The whole TLV struct will
 // be marshaled to bytes and feed into the hash algo.
 func (c COSTLV) GenerateDigest(hashAlgo crypto.Hash) ([]byte, error) {
-	contentTLV, err := c.GetTLV()
+	contentTLV, err := c.TLV()
 	if err != nil {
 		return nil, err
 	}
