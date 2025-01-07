@@ -18,7 +18,7 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 
 	// add events
 	testCELEvents := []struct {
-		cosNestedEventType coscel.COSType
+		cosNestedEventType coscel.ContentType
 		register           int
 		eventPayload       []byte
 	}{

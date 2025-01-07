@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	// COSEventType indicates the CELR event is a COS content
+	// CELRType indicates the CELR event is a COS content
 	// TODO: the value needs to be reserved in the CEL spec
-	COSEventType uint8 = 80
+	CELRType uint8 = 80
 	// EventPCRIndex is the PCR which should be used for CosEventType events.
 	EventPCRIndex = 13
 	// EventRTMRIndex is the RTMR to be extended for COS events
@@ -30,12 +30,12 @@ const (
 	COSCCELMRIndex = 4
 )
 
-// COSType represent a COS content type in a CEL record content.
-type COSType uint8
+// ContentType represent a COS content type in a CEL record content.
+type ContentType uint8
 
 // Type for COS nested events
 const (
-	ImageRefType COSType = iota
+	ImageRefType ContentType = iota
 	ImageDigestType
 	RestartPolicyType
 	ImageIDType
@@ -43,7 +43,6 @@ const (
 	EnvVarType
 	OverrideArgType
 	OverrideEnvType
-	// EventContent is empty on success, or contains an error message on failure.
 	LaunchSeparatorType
 	MemoryMonitorType
 )
@@ -51,7 +50,7 @@ const (
 // COSTLV is a specific event type created for the COS (Google Container-Optimized OS),
 // used as a CEL content.
 type COSTLV struct {
-	EventType    COSType
+	EventType    ContentType
 	EventContent []byte
 }
 
@@ -63,7 +62,7 @@ func (c COSTLV) TLV() (cel.TLV, error) {
 	}
 
 	return cel.TLV{
-		Type:  COSEventType,
+		Type:  CELRType,
 		Value: data,
 	}, nil
 }
@@ -99,12 +98,12 @@ func ParseToCOSTLV(t cel.TLV) (COSTLV, error) {
 	if err != nil {
 		return COSTLV{}, err
 	}
-	return COSTLV{COSType(nestedEvent.Type), nestedEvent.Value}, nil
+	return COSTLV{ContentType(nestedEvent.Type), nestedEvent.Value}, nil
 }
 
 // IsCOSTLV check whether t is a COS TLV by its Type value.
 func IsCOSTLV(t cel.TLV) bool {
-	return t.Type == COSEventType
+	return t.Type == CELRType
 }
 
 // FormatEnvVar takes in an environment variable name and its value, run some checks. Concats
