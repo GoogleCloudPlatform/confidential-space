@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/signedcontainer/internal/convert"
@@ -165,4 +166,17 @@ func createPublicKeysetHandle(publicKey []byte, sigAlg signingAlgorithm) (*keyse
 	default:
 		return nil, fmt.Errorf("unsupported signing algorithm: %v", sigAlg)
 	}
+}
+
+// FilterByKeyIDs returns the elements in 'signatures' with key IDs present in 'kids'.
+// If kids is nil or empty, an empty list will be returned.
+func FilterByKeyIDs(signatures []*VerifiedSignature, kids []string) []*VerifiedSignature {
+	filteredSigs := []*VerifiedSignature{}
+	for _, sig := range signatures {
+		if slices.Contains(kids, sig.KeyID) {
+			filteredSigs = append(filteredSigs, sig)
+		}
+	}
+
+	return filteredSigs
 }
