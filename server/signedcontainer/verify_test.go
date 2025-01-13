@@ -422,3 +422,75 @@ func TestCreatePublicKeysetHandle(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterByKeyID(t *testing.T) {
+	testSignatures := []*VerifiedSignature{
+		{
+			Signature: "sig0",
+			KeyID:     "kid0",
+			Alg:       "RS256",
+		},
+		{
+			Signature: "sig1",
+			KeyID:     "kid1",
+			Alg:       "RS256",
+		},
+		{
+			Signature: "sig2",
+			KeyID:     "kid2",
+			Alg:       "RS256",
+		},
+	}
+
+	testcases := []struct {
+		name               string
+		keyIDs             []string
+		expectedSignatures []*VerifiedSignature
+	}{
+		{
+			name: "all keyIDs present",
+			keyIDs: []string{
+				testSignatures[0].KeyID,
+				testSignatures[1].KeyID,
+				testSignatures[2].KeyID,
+			},
+			expectedSignatures: testSignatures,
+		},
+		{
+			name:               "no expected keyIDs present",
+			keyIDs:             []string{"a-different-key-id"},
+			expectedSignatures: []*VerifiedSignature{},
+		},
+		{
+			name: "some keyIDs present",
+			keyIDs: []string{
+				testSignatures[0].KeyID,
+				testSignatures[2].KeyID,
+			},
+			expectedSignatures: []*VerifiedSignature{
+				testSignatures[0],
+				testSignatures[2],
+			},
+		},
+		{
+			name:               "empty keyIDs",
+			keyIDs:             []string{},
+			expectedSignatures: []*VerifiedSignature{},
+		},
+		{
+			name:               "nil keyIDs",
+			keyIDs:             nil,
+			expectedSignatures: []*VerifiedSignature{},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			filteredSigs := FilterByKeyIDs(testSignatures, tc.keyIDs)
+
+			if diff := cmp.Diff(filteredSigs, tc.expectedSignatures); diff != "" {
+				t.Errorf("FilterByKeyIDs did not return expected signatures: %v", diff)
+			}
+		})
+	}
+}
