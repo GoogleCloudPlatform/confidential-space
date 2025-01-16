@@ -177,14 +177,14 @@ func createPublicKeysetHandle(publicKey []byte, sigAlg signingAlgorithm) (*keyse
 // If kids is nil or empty, an empty list will be returned.
 func FilterByKeyIDs(signatures []*VerifiedSignature, allowedKeyIDs []string) []string {
 	// Add keyIDs to sets to remove duplicates.
-	keyIdsFromClaims := map[string]bool{}
+	sigKIDs := map[string]bool{}
 	for _, imageSigClaim := range signatures {
-		keyIdsFromClaims[imageSigClaim.KeyID] = true
+		sigKIDs[imageSigClaim.KeyID] = true
 	}
 
 	keyIdsSet := map[string]bool{}
 	for _, goodKeyID := range allowedKeyIDs {
-		if ok, _ := keyIdsFromClaims[goodKeyID]; ok {
+		if ok, _ := sigKIDs[goodKeyID]; ok {
 			keyIdsSet[goodKeyID] = true
 		}
 	}

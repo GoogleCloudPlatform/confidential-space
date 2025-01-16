@@ -443,9 +443,9 @@ func TestFilterByKeyID(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name               string
-		keyIDs             []string
-		expectedSignatures []*VerifiedSignature
+		name         string
+		keyIDs       []string
+		expectedKIDs []string
 	}{
 		{
 			name: "all keyIDs present",
@@ -454,12 +454,16 @@ func TestFilterByKeyID(t *testing.T) {
 				testSignatures[1].KeyID,
 				testSignatures[2].KeyID,
 			},
-			expectedSignatures: testSignatures,
+			expectedKIDs: []string{
+				testSignatures[0].KeyID,
+				testSignatures[1].KeyID,
+				testSignatures[2].KeyID,
+			},
 		},
 		{
-			name:               "no expected keyIDs present",
-			keyIDs:             []string{"a-different-key-id"},
-			expectedSignatures: []*VerifiedSignature{},
+			name:         "no expected keyIDs present",
+			keyIDs:       []string{"a-different-key-id"},
+			expectedKIDs: []string{},
 		},
 		{
 			name: "some keyIDs present",
@@ -467,29 +471,34 @@ func TestFilterByKeyID(t *testing.T) {
 				testSignatures[0].KeyID,
 				testSignatures[2].KeyID,
 			},
-			expectedSignatures: []*VerifiedSignature{
-				testSignatures[0],
-				testSignatures[2],
+			expectedKIDs: []string{
+				testSignatures[0].KeyID,
+				testSignatures[2].KeyID,
 			},
 		},
 		{
-			name:               "empty keyIDs",
-			keyIDs:             []string{},
-			expectedSignatures: []*VerifiedSignature{},
+			name:         "empty keyIDs",
+			keyIDs:       []string{},
+			expectedKIDs: nil,
 		},
 		{
-			name:               "nil keyIDs",
-			keyIDs:             nil,
-			expectedSignatures: []*VerifiedSignature{},
+			name:         "nil keyIDs",
+			keyIDs:       nil,
+			expectedKIDs: nil,
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			filteredSigs := FilterByKeyIDs(testSignatures, tc.keyIDs)
+			filteredKIDs := FilterByKeyIDs(testSignatures, tc.keyIDs)
 
-			if diff := cmp.Diff(filteredSigs, tc.expectedSignatures); diff != "" {
-				t.Errorf("FilterByKeyIDs did not return expected signatures: %v", diff)
+			var expected []string = nil
+			if len(tc.expectedKIDs) > 0 {
+				expected = []string{strings.Join(tc.expectedKIDs, principalTagClaimDelimiter)}
+			}
+
+			if diff := cmp.Diff(filteredKIDs, expected); diff != "" {
+				t.Errorf("FilterByKeyIDs did not return expected kids: %v", diff)
 			}
 		})
 	}
