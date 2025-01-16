@@ -8,11 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/signedcontainer/internal/convert"
 	"github.com/tink-crypto/tink-go/v2/keyset"
 	tinksig "github.com/tink-crypto/tink-go/v2/signature"
+)
+
+const (
+	principalTagClaimDelimiter = "="
 )
 
 type ImageSignature struct {
@@ -170,13 +175,30 @@ func createPublicKeysetHandle(publicKey []byte, sigAlg signingAlgorithm) (*keyse
 
 // FilterByKeyIDs returns the elements in 'signatures' with key IDs present in 'kids'.
 // If kids is nil or empty, an empty list will be returned.
-func FilterByKeyIDs(signatures []*VerifiedSignature, kids []string) []*VerifiedSignature {
-	filteredSigs := []*VerifiedSignature{}
-	for _, sig := range signatures {
-		if slices.Contains(kids, sig.KeyID) {
-			filteredSigs = append(filteredSigs, sig)
+func FilterByKeyIDs(signatures []*VerifiedSignature, allowedKeyIDs []string) []string {
+	// Add keyIDs to sets to remove duplicates.
+	keyIdsFromClaims := map[string]bool{}
+	for _, imageSigClaim := range signatures {
+		keyIdsFromClaims[imageSigClaim.KeyID] = true
+	}
+
+	keyIdsSet := map[string]bool{}
+	for _, goodKeyID := range allowedKeyIDs {
+		if ok, _ := keyIdsFromClaims[goodKeyID]; ok {
+			keyIdsSet[goodKeyID] = true
 		}
 	}
 
-	return filteredSigs
+	// Only add the claim if there are any valid matches.
+	if len(keyIdsSet) > 0 {
+		keyIds := []string{}
+		for k := range keyIdsSet {
+			keyIds = append(keyIds, k)
+		}
+		// Normalize the keyIDs by sorting in ascending order before concatenating them.
+		slices.Sort(keyIds)
+		return []string{strings.Join(keyIds, principalTagClaimDelimiter)}
+	}
+
+	return nil
 }
