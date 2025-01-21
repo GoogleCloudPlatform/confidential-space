@@ -1,6 +1,0 @@
-flask
-google-cloud-storage
-google-cloud-kms
-torch
-transformers
-sentencepiece
