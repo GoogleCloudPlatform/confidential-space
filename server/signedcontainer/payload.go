@@ -24,22 +24,22 @@ const (
 	// Unspecified signing algorithm.
 	unspecified = 0
 	// RSASSA-PSS with a SHA256 digest.
-	rsassa_pss_sha256 = 1
+	rsassaPssSha256 = 1
 	// RSASSA-PKCS1 v1.5 with a SHA256 digest.
-	rsasaa_pkcs1v15_sha256 = 2
+	rsasaaPkcs1v15Sha256 = 2
 	// ECDSA on the P-256 Curve with a SHA256 digest.
-	ecdsa_p256_sha256 = 3
+	ecdsaP256Sha256 = 3
 )
 
 func (s signingAlgorithm) string() string {
 	switch s {
 	case unspecified:
 		return "SIGNING_ALGORITHM_UNSPECIFIED"
-	case rsassa_pss_sha256:
+	case rsassaPssSha256:
 		return "RSASSA_PSS_SHA256"
-	case rsasaa_pkcs1v15_sha256:
+	case rsasaaPkcs1v15Sha256:
 		return "RSASSA_PKCS1V15_SHA256"
-	case ecdsa_p256_sha256:
+	case ecdsaP256Sha256:
 		return "ECDSA_P256_SHA256"
 	}
 
@@ -93,11 +93,11 @@ func (p *payload) publicKey() ([]byte, error) {
 	return publicKeyBytes, nil
 }
 
-var signingAlgorithm_value = map[string]signingAlgorithm{
+var signingAlgorithmValue = map[string]signingAlgorithm{
 	"SIGNING_ALGORITHM_UNSPECIFIED": unspecified,
-	"RSASSA_PSS_SHA256":             rsassa_pss_sha256,
-	"RSASSA_PKCS1V15_SHA256":        rsasaa_pkcs1v15_sha256,
-	"ECDSA_P256_SHA256":             ecdsa_p256_sha256,
+	"RSASSA_PSS_SHA256":             rsassaPssSha256,
+	"RSASSA_PKCS1V15_SHA256":        rsasaaPkcs1v15Sha256,
+	"ECDSA_P256_SHA256":             ecdsaP256Sha256,
 }
 
 // sigAlg retrieves the signing algorithm from the `optional` field of the payload.
@@ -106,7 +106,7 @@ func (p *payload) sigAlg() (signingAlgorithm, error) {
 	if !ok {
 		return unspecified, fmt.Errorf("signing algorithm not found in the Optional field of payload: %v", p)
 	}
-	algVal, ok := signingAlgorithm_value[alg]
+	algVal, ok := signingAlgorithmValue[alg]
 	if !ok || algVal == unspecified {
 		return unspecified, fmt.Errorf("unsupported signing algorithm: %s", alg)
 	}

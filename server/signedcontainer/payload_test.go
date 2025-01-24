@@ -124,15 +124,15 @@ func TestSigAlg(t *testing.T) {
 	}{
 		{
 			annotations: map[string]any{sigAlgURL: "RSASSA_PSS_SHA256"},
-			expected:    rsassa_pss_sha256,
+			expected:    rsassaPssSha256,
 		},
 		{
 			annotations: map[string]any{sigAlgURL: "RSASSA_PKCS1V15_SHA256"},
-			expected:    rsasaa_pkcs1v15_sha256,
+			expected:    rsasaaPkcs1v15Sha256,
 		},
 		{
 			annotations: map[string]any{sigAlgURL: "ECDSA_P256_SHA256"},
-			expected:    ecdsa_p256_sha256,
+			expected:    ecdsaP256Sha256,
 		},
 	}
 

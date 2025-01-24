@@ -1,3 +1,4 @@
+// Package signedcontainer contains functions to verify container image signatures.
 package signedcontainer
 
 import (
@@ -14,6 +15,7 @@ import (
 	tinksig "github.com/tink-crypto/tink-go/v2/signature"
 )
 
+// ImageSignature represents a container image signature.
 type ImageSignature struct {
 	Payload   []byte
 	Signature []byte
@@ -21,12 +23,14 @@ type ImageSignature struct {
 
 const maxSignatureCount = 300
 
+// VerifiedSignature contains information about a successfully verified signature.
 type VerifiedSignature struct {
 	KeyID     string `json:"key_id,omitempty"`
 	Signature string `json:"signature,omitempty"`
 	Alg       string `json:"signature_algorithm,omitempty"`
 }
 
+// VerifyResult contains the results of verifying a list of signatures.
 type VerifyResult struct {
 	Verified []*VerifiedSignature
 	Errors   []error
@@ -156,11 +160,11 @@ func verifySignature(imageDigest string, sig *ImageSignature) (*VerifiedSignatur
 // createPublicKeysetHandle takes in the given PEM-encoded public key and creates a public keyset handle based on the signing algorithm.
 func createPublicKeysetHandle(publicKey []byte, sigAlg signingAlgorithm) (*keyset.Handle, error) {
 	switch sigAlg {
-	case ecdsa_p256_sha256:
+	case ecdsaP256Sha256:
 		return convert.PemToECDSAP256Sha256WithDEREncodingKeysetHandle(publicKey)
-	case rsasaa_pkcs1v15_sha256:
+	case rsasaaPkcs1v15Sha256:
 		return convert.PemToRsaSsaPkcs1Sha256KeysetHandle(publicKey)
-	case rsassa_pss_sha256:
+	case rsassaPssSha256:
 		return convert.PemToRsaSsaPssSha256KeysetHandle(publicKey)
 	default:
 		return nil, fmt.Errorf("unsupported signing algorithm: %v", sigAlg)

@@ -1,3 +1,4 @@
+// Package coscel contains the COS TLV event type and related functions.
 package coscel
 
 import (
@@ -54,7 +55,7 @@ type COSTLV struct {
 	EventContent []byte
 }
 
-// GetTLV returns the TLV representation of the COS TLV.
+// TLV returns the TLV representation of the COS TLV.
 func (c COSTLV) TLV() (cel.TLV, error) {
 	data, err := cel.TLV{uint8(c.EventType), c.EventContent}.MarshalBinary()
 	if err != nil {

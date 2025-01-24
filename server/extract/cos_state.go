@@ -1,3 +1,4 @@
+// Package extract contains functions to extract information from the COS event log.
 package extract
 
 import (
@@ -8,7 +9,8 @@ import (
 	pb "github.com/google/go-tpm-tools/proto/attest"
 )
 
-func VerifiedCOSState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosState, error) {
+// VerifiedCOSState returns the AttestedCosState from the given event log.
+func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosState, error) {
 	cosState := &pb.AttestedCosState{}
 	cosState.Container = &pb.ContainerState{}
 	cosState.HealthMonitoring = &pb.HealthMonitoringState{}
@@ -17,7 +19,7 @@ func VerifiedCOSState(event_log cel.CEL, registerType uint8) (*pb.AttestedCosSta
 	cosState.Container.OverriddenEnvVars = make(map[string]string)
 
 	seenSeparator := false
-	for _, record := range event_log.Records() {
+	for _, record := range eventLog.Records() {
 		if record.IndexType != registerType {
 			return nil, fmt.Errorf("expect registerType: %d, but get %d in a CEL record", registerType, record.IndexType)
 		}

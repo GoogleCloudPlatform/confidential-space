@@ -1,3 +1,4 @@
+// Package gcpcredential contains functions to validate Google-issued ID tokens.
 package gcpcredential
 
 import (
@@ -83,6 +84,7 @@ func Validate(ctx context.Context, client *http.Client, credentials []string, ex
 	return validateAndParse(credentials, validator)
 }
 
+// JWK is a subset of the JSON Web Key (JWK) format.
 type JWK struct {
 	Alg string `json:"alg"`
 	Crv string `json:"crv"`
@@ -95,6 +97,7 @@ type JWK struct {
 	Y   string `json:"y"`
 }
 
+// JWKS is a subset of the JSON Web Key Set (JWKSet) format.
 type JWKS struct {
 	Keys []JWK `json:"keys"`
 }
@@ -132,7 +135,7 @@ func ecdsaPubKey(key JWK) (*ecdsa.PublicKey, error) {
 	}, nil
 }
 
-// Validates the provided credentials using the provided public keys.
+// ValidateWithJWKS validates the provided credentials using the provided public keys.
 // It is the caller's responsibility to retrieve and provide Google's JWKs (https://www.googleapis.com/oauth2/v3/certs).
 func ValidateWithJWKS(jwks *JWKS, credentials []string, expectedAudience string) ([]string, error) {
 	// For JWT validation - finds the JWK that corresponds to the tokens Key ID and parses it into its respective key type.
@@ -253,8 +256,8 @@ func parseEmailClaims(mapClaims map[string]any) (*emailClaims, error) {
 // The subset of claims we care about in Google-issued OpenID tokens.
 // Full claims documented at:
 //
-//		https://cloud.google.com/compute/docs/instances/verifying-instance-identity#payload
-//		https://developers.google.com/identity/protocols/oauth2/openid-connect
+//	https://cloud.google.com/compute/docs/instances/verifying-instance-identity#payload
+//	https://developers.google.com/identity/protocols/oauth2/openid-connect
 type emailClaims struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`

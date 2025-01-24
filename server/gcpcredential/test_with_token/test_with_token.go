@@ -1,3 +1,4 @@
+// Package main is a simple program to test the gcpcredential library against a GCP-issued token.
 package main
 
 import (

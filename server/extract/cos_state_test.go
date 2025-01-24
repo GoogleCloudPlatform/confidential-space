@@ -14,7 +14,7 @@ import (
 )
 
 func TestVerifiedCosStateRTMR(t *testing.T) {
-	cos_event_log := cel.NewConfComputeMR()
+	cosEventLog := cel.NewConfComputeMR()
 
 	// add events
 	testCELEvents := []struct {
@@ -60,16 +60,15 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 	for _, testEvent := range testCELEvents {
 		cosEvent := coscel.COSTLV{EventType: testEvent.cosNestedEventType, EventContent: testEvent.eventPayload}
 
-		err := cos_event_log.AppendEvent(cosEvent, []crypto.Hash{crypto.SHA384}, coscel.COSCCELMRIndex, func(_ crypto.Hash, ccmrIdx int, dgst []byte) error {
+		err := cosEventLog.AppendEvent(cosEvent, []crypto.Hash{crypto.SHA384}, coscel.COSCCELMRIndex, func(_ crypto.Hash, ccmrIdx int, dgst []byte) error {
 			return rtmr.ExtendDigestClient(fakeRTMR, ccmrIdx-1, dgst)
 		})
-		// err := cos_event_log.AppendEventRTMR(fakeRTMR, testEvent.register, cosEvent);
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	cosState, err := VerifiedCOSState(cos_event_log, uint8(cel.CCMRType))
+	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType))
 	if err != nil {
 		t.Error(err)
 	}
