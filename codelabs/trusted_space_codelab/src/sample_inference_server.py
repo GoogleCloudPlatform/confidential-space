@@ -6,6 +6,7 @@ from google.cloud import kms
 from google.cloud import storage
 import torch
 from transformers import AutoModelForCausalLM, GemmaTokenizer
+from cryptography.fernet import Fernet
 
 # Bucket that holds Codegemma model
 MODEL_BUCKET_NAME = "vertex-model-garden-public-us"
@@ -83,21 +84,23 @@ def generate():
   try:
     data = request.get_json()
     ciphertext = base64.b64decode(data["ciphertext"])
-    decrypted_response = kms_client.decrypt(
-        request={"name": key_name, "ciphertext": ciphertext}
+    wrapped_dek = base64.b64decode(data["wrapped_dek"])
+    unwrapped_dek_response = kms_client.decrypt(
+        request={"name": key_name, "ciphertext": wrapped_dek}
     )
-    plaintext = decrypted_response.plaintext
+    unwrapped_dek = unwrapped_dek_response.plaintext
+    f = Fernet(unwrapped_dek)
+    plaintext = f.decrypt(ciphertext)
     prompt = plaintext.decode("utf-8")
     tokens = tokenizer(prompt, return_tensors="pt")
     outputs = model.generate(**tokens, max_new_tokens=128)
     generated_code = tokenizer.decode(outputs[0])
     generated_code_bytes = generated_code.encode("utf-8")
 
-    response = kms_client.encrypt(name=key_name, plaintext=generated_code_bytes)
-    ciphertext = response.ciphertext
-    ciphertext_base64 = base64.b64encode(ciphertext).decode("utf-8")
+    response = f.encrypt(generated_code_bytes)
+    ciphertext_base64 = base64.b64encode(response).decode("utf-8")
     response = {"generated_code_ciphertext": ciphertext_base64}
-    return response
+    return jsonify(response)
 
   except (ValueError, TypeError, KeyError) as e:
     return jsonify({"error": str(e)}), 500

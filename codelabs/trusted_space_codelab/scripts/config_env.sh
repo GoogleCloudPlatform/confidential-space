@@ -22,3 +22,7 @@ export WORKLOAD_SERVICEACCOUNT=${WORKLOAD_SERVICEACCOUNT:-workload-sa}
 export WORKLOAD_IMAGE_NAME=${WORKLOAD_IMAGE_NAME:-workload-container}
 export WORKLOAD_IMAGE_TAG=${WORKLOAD_IMAGE_TAG:-latest}
 export WORKLOAD_VM=${WORKLOAD_VM:-workload-vm}
+
+# Workload client related variables
+export CLIENT_VM=${CLIENT_VM:-client-vm}
+export CLIENT_SERVICEACCOUNT=${CLIENT_SERVICEACCOUNT:-client-sa}

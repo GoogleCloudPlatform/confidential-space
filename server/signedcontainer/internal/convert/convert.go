@@ -1,3 +1,4 @@
+// Package convert contains functions to innitialize Tink keysets from PEM-encoded data.
 package convert
 
 // TODO: Remove this package and migrate to the Tink API when they publish it.

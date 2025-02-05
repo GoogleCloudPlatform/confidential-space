@@ -49,11 +49,11 @@ JwIDAQAB
 // base64-encoded signatures over byte slices of the corresponding payloads:
 var base64Sigs = map[signingAlgorithm]string{
 	// openssl dgst -sign ec_private.pem -sha256 | base64
-	ecdsa_p256_sha256: "MEUCIDWVapx3r93lFmKRR3v2AzYUui2Pdur3AYSYkiicZKcEAiEAj3GC2+1JdRXxypXrUmTqtFrPxneCY3jQAdqoCDmjVx0=",
+	ecdsaP256Sha256: "MEUCIDWVapx3r93lFmKRR3v2AzYUui2Pdur3AYSYkiicZKcEAiEAj3GC2+1JdRXxypXrUmTqtFrPxneCY3jQAdqoCDmjVx0=",
 	// openssl dgst -sign rsa_private.pem -sha256 | base64
-	rsasaa_pkcs1v15_sha256: "PxShLjtQfmju/mKLtHJ5gsX1M8nlkEv2uYpKuNvVeANSrH3Px4hAOw302G2YLPaLRMcsBnLKIVL4lHr0FqqDQluVj/eJJ+PHvcmSltbLhCvw2f1ZTjt/NcgThfL5gpywgAHVXSYESettaCezWsPvRlyf6vypKMbnaO8D6gWX96hAiAFdHbTnVlpQ5rBjbyErx5NkyZhaGPOqXk6FAtZDHFy7Cg+vaq9wItZzp/7+JC7dEIRQel9xSKYUKIG4W563Q/7i8DGMg+rETOxgpBR9oco3QNev7YIuDUd++Dk3M/Wv9b1u6I9aqBdVe86TU+5Ur2nyNxw9chzhNmtdu5zTyA==",
+	rsasaaPkcs1v15Sha256: "PxShLjtQfmju/mKLtHJ5gsX1M8nlkEv2uYpKuNvVeANSrH3Px4hAOw302G2YLPaLRMcsBnLKIVL4lHr0FqqDQluVj/eJJ+PHvcmSltbLhCvw2f1ZTjt/NcgThfL5gpywgAHVXSYESettaCezWsPvRlyf6vypKMbnaO8D6gWX96hAiAFdHbTnVlpQ5rBjbyErx5NkyZhaGPOqXk6FAtZDHFy7Cg+vaq9wItZzp/7+JC7dEIRQel9xSKYUKIG4W563Q/7i8DGMg+rETOxgpBR9oco3QNev7YIuDUd++Dk3M/Wv9b1u6I9aqBdVe86TU+5Ur2nyNxw9chzhNmtdu5zTyA==",
 	// openssl dgst -sign rsa_private.pem -sigopt rsa_padding_mode:pss -sha256 | base64
-	rsassa_pss_sha256: "egqyxSJnAqS/GJ0ryeL2RXz2xCl53ynSt2Nk09VjP20IffO3uAjMsfneJOQjOljJRzMknsp4S0yr7E+6pBIi9x3Qkcs+KTpUNMpEAtXhn/qloE1SUx/j7uTUSQBkaxnlQvwrmMup+PChDNL6aRRfzEiV/rmywAicWCS4kLtHXNFOcV3emd1t3Vzp00ywfGFKjTzFnJlyxsLjO+uEsYlpUWjGaJ4n2f0wOthEGHH02wVEYNHS5wEYpu0GbcaL7C3pdBsYfpQHZWhHTNcalLBASbQ5ienMn17ZDm0bXplEbtjd2hj+xFIy0iKD39YV94vtsA0yjIkRSiXHVCWEKKWIUA==",
+	rsassaPssSha256: "egqyxSJnAqS/GJ0ryeL2RXz2xCl53ynSt2Nk09VjP20IffO3uAjMsfneJOQjOljJRzMknsp4S0yr7E+6pBIi9x3Qkcs+KTpUNMpEAtXhn/qloE1SUx/j7uTUSQBkaxnlQvwrmMup+PChDNL6aRRfzEiV/rmywAicWCS4kLtHXNFOcV3emd1t3Vzp00ywfGFKjTzFnJlyxsLjO+uEsYlpUWjGaJ4n2f0wOthEGHH02wVEYNHS5wEYpu0GbcaL7C3pdBsYfpQHZWhHTNcalLBASbQ5ienMn17ZDm0bXplEbtjd2hj+xFIy0iKD39YV94vtsA0yjIkRSiXHVCWEKKWIUA==",
 }
 
 func decodedSig(t *testing.T, alg signingAlgorithm) []byte {
@@ -194,17 +194,17 @@ func TestVerifySignature(t *testing.T) {
 		{
 			name:      "ECDSA",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ecdsa_p256_sha256,
+			sigAlg:    ecdsaP256Sha256,
 		},
 		{
 			name:      "RSASSAPKCS1V15",
 			publicKey: rsaPubKey,
-			sigAlg:    rsasaa_pkcs1v15_sha256,
+			sigAlg:    rsasaaPkcs1v15Sha256,
 		},
 		{
 			name:      "RSASSAPSS",
 			publicKey: rsaPubKey,
-			sigAlg:    rsassa_pss_sha256,
+			sigAlg:    rsassaPssSha256,
 		},
 	}
 
@@ -234,17 +234,17 @@ func TestVerifySignatureWithInvalidDigest(t *testing.T) {
 		{
 			name:      "ECDSA",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ecdsa_p256_sha256,
+			sigAlg:    ecdsaP256Sha256,
 		},
 		{
 			name:      "RSASSAPKCS1V15",
 			publicKey: rsaPubKey,
-			sigAlg:    rsasaa_pkcs1v15_sha256,
+			sigAlg:    rsasaaPkcs1v15Sha256,
 		},
 		{
 			name:      "RSASSAPSS",
 			publicKey: rsaPubKey,
-			sigAlg:    rsassa_pss_sha256,
+			sigAlg:    rsassaPssSha256,
 		},
 	}
 
@@ -278,17 +278,17 @@ func TestVerifySignatureWithInvalidSignature(t *testing.T) {
 		{
 			name:      "ECDSA",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ecdsa_p256_sha256,
+			sigAlg:    ecdsaP256Sha256,
 		},
 		{
 			name:      "RSASSAPKCS1V15",
 			publicKey: rsaPubKey,
-			sigAlg:    rsasaa_pkcs1v15_sha256,
+			sigAlg:    rsasaaPkcs1v15Sha256,
 		},
 		{
 			name:      "RSASSAPSS",
 			publicKey: rsaPubKey,
-			sigAlg:    rsassa_pss_sha256,
+			sigAlg:    rsassaPssSha256,
 		},
 	}
 
@@ -331,37 +331,37 @@ SQIDAQAB
 		{
 			name:      "ECDSA with mismatched key",
 			publicKey: mismatchedECDSA,
-			sigAlg:    ecdsa_p256_sha256,
+			sigAlg:    ecdsaP256Sha256,
 			expectErr: "invalid signature",
 		},
 		{
 			name:      "RSASSA_PKCS1V15_SHA256 with mismatched key",
 			publicKey: mismatchedRSA,
-			sigAlg:    rsasaa_pkcs1v15_sha256,
+			sigAlg:    rsasaaPkcs1v15Sha256,
 			expectErr: "invalid signature",
 		},
 		{
 			name:      "RSASSA_PSS_SHA256 with mismatched key",
 			publicKey: mismatchedRSA,
-			sigAlg:    rsassa_pss_sha256,
+			sigAlg:    rsassaPssSha256,
 			expectErr: "invalid signature",
 		},
 		{
 			name:      "ECDSA with RSA key",
 			publicKey: rsaPubKey,
-			sigAlg:    ecdsa_p256_sha256,
+			sigAlg:    ecdsaP256Sha256,
 			expectErr: "public key is not an ECDSA public key",
 		},
 		{
 			name:      "RSASSA_PKCS1V15_SHA256 with ECDSA key",
 			publicKey: ecdsaPubKey,
-			sigAlg:    rsasaa_pkcs1v15_sha256,
+			sigAlg:    rsasaaPkcs1v15Sha256,
 			expectErr: "public key is not a RSA public key",
 		},
 		{
 			name:      "RSASSA_PSS_SHA256 with ECDSA key",
 			publicKey: ecdsaPubKey,
-			sigAlg:    rsassa_pss_sha256,
+			sigAlg:    rsassaPssSha256,
 			expectErr: "public key is not a RSA public key",
 		},
 	}
@@ -390,19 +390,19 @@ func TestCreatePublicKeysetHandle(t *testing.T) {
 		{
 			name:      "RSASSA_PKCS1V15_SHA256 createPublicKeyset",
 			publicKey: rsaPubKey,
-			sigAlg:    rsasaa_pkcs1v15_sha256,
+			sigAlg:    rsasaaPkcs1v15Sha256,
 			wantPass:  true,
 		},
 		{
 			name:      "RSASSA_PSS_SHA256 createPublicKeyset",
 			publicKey: rsaPubKey,
-			sigAlg:    rsassa_pss_sha256,
+			sigAlg:    rsassaPssSha256,
 			wantPass:  true,
 		},
 		{
 			name:      "ECDSA_P256_SHA256 createPublicKeyset",
 			publicKey: ecdsaPubKey,
-			sigAlg:    ecdsa_p256_sha256,
+			sigAlg:    ecdsaP256Sha256,
 			wantPass:  true,
 		},
 		{

@@ -1,0 +1,4 @@
+pyjwt
+requests
+cryptography
+google-cloud-kms==2.21.1

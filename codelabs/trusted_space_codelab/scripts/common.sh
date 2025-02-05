@@ -293,3 +293,40 @@ get_confirmation() {
 
   echo "$confirmed"
 }
+
+
+#######################################
+# Function to wait for VM SSH connection to be established.
+# Globals:
+#   None
+# Arguments:
+#   Name of VM instance
+#   Zone of VM instance
+#   Project of VM instance
+#   Max retry count for SSH connections
+#######################################
+wait_for_vm_ssh_connection() {
+  local counter=0
+
+  local readonly instance=${1:?"instance required"}
+  local readonly zone=${2:?"zone required"}
+  local readonly project=${3:?"project required"}
+  local readonly maxRetry=${4:-20}
+
+  while true ; do
+    if (( $counter == $maxRetry )) ; then
+      echo "Reach the retry upper limit $counter"
+      exit 1
+    fi
+
+    gcloud compute ssh --quiet "${instance}" --zone="${zone}"  --project "${project}" --command="true" 2> /dev/null
+    if (( $? == 0 )) ;then
+      echo "Instance ${instance} is ready to accept SSH connection !"
+      return
+    else
+      echo "Instance ${instance} is not ready to accept SSH connection. Retrying ..."
+      ((counter++))
+      sleep 5
+    fi
+  done
+}
