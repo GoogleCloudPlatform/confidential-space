@@ -69,6 +69,13 @@ delete_primus_resources() {
   else
     echo "Skipping the deletion of the VM ${WORKLOAD_VM} ..."
   fi
+
+  confirmation=$(get_confirmation "Are you sure you want to delete the VM ${CLIENT_VM} ?")
+  if [[ "${confirmation}" == "true" ]]; then
+    delete_vm "${CLIENT_VM}" "${PRIMUS_PROJECT_ZONE}" "${PRIMUS_PROJECT_ID}"
+  else
+    echo "Skipping the deletion of the VM ${CLIENT_VM} ..."
+  fi
 }
 
 
