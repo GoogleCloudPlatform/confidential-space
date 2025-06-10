@@ -20,16 +20,16 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosStat
 
 	seenSeparator := false
 	for _, record := range eventLog.Records() {
-		if record.IndexType != registerType {
+		if uint8(record.IndexType) != registerType {
 			return nil, fmt.Errorf("expect registerType: %d, but get %d in a CEL record", registerType, record.IndexType)
 		}
 
 		switch record.IndexType {
-		case uint8(cel.PCRType):
+		case cel.PCRType:
 			if record.Index != coscel.EventPCRIndex {
 				return nil, fmt.Errorf("found unexpected PCR %d in COS CEL log", record.Index)
 			}
-		case uint8(cel.CCMRType):
+		case cel.CCMRType:
 			if record.Index != coscel.COSCCELMRIndex {
 				return nil, fmt.Errorf("found unexpected CCELMR %d in COS CEL log", record.Index)
 			}

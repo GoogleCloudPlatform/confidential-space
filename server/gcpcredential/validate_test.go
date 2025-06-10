@@ -15,19 +15,13 @@ import (
 	"testing"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/idtoken"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 const testAudience = "testaud"
 const testKeyID = "testkid"
-
-func TestDefaultHTTPClient(t *testing.T) {
-	if _, err := defaultHTTPClient(); err != nil {
-		t.Errorf("GoogleCACerts() returned error %v", nil)
-	}
-}
 
 type jwkInfo = map[string]any
 

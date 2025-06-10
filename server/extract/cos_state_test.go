@@ -9,8 +9,8 @@ import (
 	"github.com/google/go-configfs-tsm/configfs/fakertmr"
 	"github.com/google/go-eventlog/cel"
 	"github.com/google/go-tdx-guest/rtmr"
-	attestpb "github.com/google/go-tpm-tools/proto/attest"
 	"google.golang.org/protobuf/testing/protocmp"
+	attestpb "github.com/google/go-tpm-tools/proto/attest"
 )
 
 func TestVerifiedCosStateRTMR(t *testing.T) {

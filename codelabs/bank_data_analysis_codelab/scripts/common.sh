@@ -199,6 +199,11 @@ delete_service_account() {
 #   Location
 #######################################
 create_workload_identity_pool() {
+  if [[ "${1}" -lt 4 || "${1}" -gt 32 ]]; then
+    echo "Error: Workload identity pool name '${1}' must be between 4 and 32 characters long." >&2
+    return 1
+  fi
+
   gcloud iam workload-identity-pools describe ${1} --location=${2} | grep ${1}
   if [[ $? -eq 0 ]]; then
     echo "Workload Identity Pool ${1} already exists. Skipping the creation of new workload-idenity-pool ..."

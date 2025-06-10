@@ -9,12 +9,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-
 	"github.com/tink-crypto/tink-go/v2/keyset"
-	"github.com/tink-crypto/tink-go/v2/signature"
 	tinkecdsa "github.com/tink-crypto/tink-go/v2/signature/ecdsa"
 	"github.com/tink-crypto/tink-go/v2/signature/rsassapkcs1"
 	"github.com/tink-crypto/tink-go/v2/signature/rsassapss"
+	"github.com/tink-crypto/tink-go/v2/signature"
 )
 
 // Generate a RSA public key by following these steps:
@@ -110,8 +109,9 @@ func TestPemToECDSAP256Sha256KeysetHandle(t *testing.T) {
 	if !gotEntry.IsPrimary() {
 		t.Errorf("gotEntry.IsPrimary() = false, want true")
 	}
+
 	if !gotEntry.Key().Equals(tinkPublicKey) {
-		t.Errorf("gotEntry.Key().Equal(tinkPublicKey) = false, want true")
+		t.Errorf("gotEntry.Key().Equals(tinkPublicKey) = false, want true")
 	}
 }
 
@@ -147,7 +147,7 @@ func TestPemToRsaSsaPkcs1Sha256Keyset(t *testing.T) {
 		t.Errorf("gotEntry.IsPrimary() = false, want true")
 	}
 	if !gotEntry.Key().Equals(tinkPublicKey) {
-		t.Errorf("gotEntry.Key().Equal(tinkPublicKey) = false, want true")
+		t.Errorf("gotEntry.Key().Equals(tinkPublicKey) = false, want true")
 	}
 }
 
@@ -190,7 +190,7 @@ func TestPemToRsaSsaPssSha256KeysetHandle(t *testing.T) {
 		t.Errorf("gotEntry.IsPrimary() = false, want true")
 	}
 	if !gotEntry.Key().Equals(tinkPublicKey) {
-		t.Errorf("gotEntry.Key().Equal(tinkPublicKey) = false, want true")
+		t.Errorf("gotEntry.Key().Equals(tinkPublicKey) = false, want true")
 	}
 }
 
