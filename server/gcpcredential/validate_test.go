@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"google3/third_party/golang/github_com/golang_jwt/jwt/v/v4/jwt"
 	"google.golang.org/api/idtoken"
-	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 const testAudience = "testaud"
