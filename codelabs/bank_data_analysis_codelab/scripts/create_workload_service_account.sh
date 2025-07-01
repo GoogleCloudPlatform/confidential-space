@@ -8,7 +8,7 @@ source common.sh
 set_gcp_project ${SECUNDUS_PROJECT_ID}
 
 echo "Creating workload service-account ${WORKLOAD_SERVICE_ACCOUNT} under project ${SECUNDUS_PROJECT_ID}..."
-create_service_account ${WORKLOAD_SERVICE_ACCOUNT}
+create_service_account ${WORKLOAD_SERVICE_ACCOUNT} ${SECUNDUS_PROJECT_ID}
 
 echo "Granting roles/iam.serviceAccountUser role to workload operator ..."
 if ! gcloud iam service-accounts add-iam-policy-binding ${WORKLOAD_SERVICE_ACCOUNT}@${SECUNDUS_PROJECT_ID}.iam.gserviceaccount.com \
