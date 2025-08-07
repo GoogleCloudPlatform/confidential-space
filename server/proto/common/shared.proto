@@ -8,4 +8,3 @@ enum SignatureAlgorithm {
     SIGNATURE_ALGORITHM_UNSPECIFIED = 0;
     ECDSA_P256_SHA256 = 1;
 }
-  
