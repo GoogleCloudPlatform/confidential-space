@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "proto/attest.proto";
 import "common/shared.proto";
 
-option go_package = "github.com/google/confidential_space/proto/gen/confidential_space_platform_rims";
+option go_package = "github.com/GoogleCloudPlatform/confidential_space/proto/gen/confidential_space_platform_rims";
 
 message CSImageGoldenMeasurement {
   // Serialized confidential_space_platform_rims proto.

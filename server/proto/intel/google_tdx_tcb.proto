@@ -4,7 +4,7 @@ package intel;
 import "google/protobuf/timestamp.proto";
 import "common/shared.proto";
 
-option go_package = "github.com/google/confidential_space/proto/gen/google_tdx_tcb";
+option go_package = "github.com/GoogleCloudPlatform/confidential_space/proto/gen/google_tdx_tcb";
 
 message TDXTCBInfo {
   // Serialized TCB info proto.
