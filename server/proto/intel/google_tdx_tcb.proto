@@ -1,0 +1,38 @@
+syntax = "proto3";
+package intel;
+
+import "google/protobuf/timestamp.proto";
+import "common/shared.proto";
+
+option go_package = "github.com/google/confidential_space/proto/gen/google_tdx_tcb";
+
+message TDXTCBInfo {
+  // Serialized TCB info proto.
+  bytes gcp_tcb_info = 1;
+
+  // Signature of gcp_tcb_info
+  bytes signature = 2;
+
+  // Signature algorithm used to generate the signature.
+  common.SignatureAlgorithm signature_algorithm = 3;
+}
+
+// intel_rim proto wrapper to allow for schema changes
+message intel_rim {
+  // Serialized TdxTcb JSON. Raw response from the Intel PCS service.
+  bytes tdx_tcb = 1;
+
+  // Time the RIM was published.
+  google.protobuf.Timestamp timestamp = 2;
+
+  // Time after which the RIM should no longer be used.
+  google.protobuf.Timestamp exp = 3;
+
+  // DER format certificate of the key that signed this document.
+  bytes cert = 4;
+
+  reserved 5; // Reserve 5, make ca_bundle item 6 to match endorsement proto 
+
+  // PEM certificates of keys in least intermediate…root order.
+  bytes ca_bundle = 6;
+}

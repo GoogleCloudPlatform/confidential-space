@@ -1,0 +1,113 @@
+syntax = "proto3";
+package confidential_space;
+
+import "google/protobuf/timestamp.proto";
+import "proto/attest.proto";
+import "common/shared.proto";
+
+option go_package = "github.com/google/confidential_space/proto/gen/confidential_space_platform_rims";
+
+message CSImageGoldenMeasurement {
+  // Serialized confidential_space_platform_rims proto.
+  bytes confidential_space_platform_rims = 1;
+
+  // Signature of image
+  bytes signature = 2;
+
+  // Signature algorithm used to generate the signature
+  common.SignatureAlgorithm signature_algorithm = 3;
+}
+
+message confidential_space_platform_rims {
+  // Serialized ImageDatabase Proto
+  ImageDatabase image_database = 1;
+
+  // Time the RIM was published.
+  google.protobuf.Timestamp timestamp = 2;
+
+  // Time after which the RIM should no longer be used.
+  google.protobuf.Timestamp exp = 3;
+
+  // DER format certificate of the key that signed this document.
+  bytes cert = 4;
+
+  reserved 5; // Reserve 5, make ca_bundle item 6 to match endorsement proto 
+
+  // PEM certificates of keys in least intermediate…root order.
+  bytes ca_bundle = 6;
+}
+
+message ImageDatabase {
+  enum AttributeLabel {
+    NIL = 0;
+    TEST = 1;  // test images
+    USABLE = 2;
+    STABLE = 3;
+    LATEST = 4;
+    EXPERIMENTAL = 5;  // external images that contain experimental features
+  }  
+
+  // Represents values associated with a Confidential Space Image
+  message ImageGoldenEntry {
+    // The public facing image release name.
+    string image_release_name = 1;
+    bool is_hardened = 2;
+    uint32 image_base_version = 5;
+    uint32 swversion = 6;
+    repeated AttributeLabel attribute_labels = 9;
+      // Explicitly marks the CS Image as retired. If this field is true, attestation validations for the corresponding CS image should fail.
+    bool obsoleted = 7;
+    
+    reserved 3, 4;
+    reserved "grub_digests", "efi_digests";
+  }
+
+  enum CCKnownCertificates {
+    UNSPECIFIED_CERT = 0;
+    CONF_SPACE_SELF_SIGNED_DB_CA = 1;
+    COS_DB_V10 = 2;
+    COS_DB_V20250203 = 3;
+  }
+
+  message CCDatabase {
+    repeated CCKnownCertificates known_certificates = 1;
+
+    repeated string digests = 2;
+  }
+
+  message ImageBaseEntry {
+    CCDatabase db = 1;
+    CCDatabase dbx = 2;
+    CCDatabase authority = 3;
+  }
+
+  // This encodes minimum requirements for general attestations received by the
+  // verifier.
+  message ServiceBasePolicy {
+    google.protobuf.Timestamp earliest_cert_issue_time = 1;
+    reserved 2;
+    reserved "firmware_policy";
+  }
+
+  message ConfidentialSpaceBasePolicy {
+    attest.Policy firmware_policy = 1;
+  }
+
+  // Map of kernel command line to other image golden values.
+  map<string, ImageGoldenEntry> golden_values = 1;
+
+  // Map of image base version to image base values.
+  map<uint32, ImageBaseEntry> image_base_values = 2;
+
+  // Attestation Verifier appraisal policy for verifying all attestations.
+  // The service will validate this policy before use case specific
+  // attestations, like Confidential Space.
+  ServiceBasePolicy service_base_policy = 5;
+  
+  // Attestation Verifier appraisal policy for verifying Confidential Space
+  // attestations.
+  ConfidentialSpaceBasePolicy cs_base_policy = 6;
+
+  reserved 3, 4;
+  reserved "firmware_policy", "earliest_cert_issue_time";
+}
