@@ -75,7 +75,7 @@ const file_shared_proto_rawDesc = "" +
 	"\fshared.proto\x12\x06common*P\n" +
 	"\x12SignatureAlgorithm\x12#\n" +
 	"\x1fSIGNATURE_ALGORITHM_UNSPECIFIED\x10\x00\x12\x15\n" +
-	"\x11ECDSA_P256_SHA256\x10\x01BDZBgithub.com/GoogleCloudPlatform/confidential_space/proto/gen/commonb\x06proto3"
+	"\x11ECDSA_P256_SHA256\x10\x01BDZBgithub.com/GoogleCloudPlatform/confidential-space/proto/gen/commonb\x06proto3"
 
 var (
 	file_shared_proto_rawDescOnce sync.Once

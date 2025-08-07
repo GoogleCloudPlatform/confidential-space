@@ -1,7 +1,7 @@
 syntax = "proto3";
 package common;
 
-option go_package = "github.com/GoogleCloudPlatform/confidential_space/proto/gen/common";
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/proto/gen/common";
 
 // Enum for specifying the signature algorithm.
 enum SignatureAlgorithm {

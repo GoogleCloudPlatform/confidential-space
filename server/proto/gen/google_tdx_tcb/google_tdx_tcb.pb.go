@@ -7,7 +7,7 @@
 package google_tdx_tcb
 
 import (
-	common "github.com/GoogleCloudPlatform/confidential_space/proto/gen/common"
+	common "github.com/GoogleCloudPlatform/confidential-space/proto/gen/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -184,7 +184,7 @@ const file_google_tdx_tcb_proto_rawDesc = "" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12,\n" +
 	"\x03exp\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12\x12\n" +
 	"\x04cert\x18\x04 \x01(\fR\x04cert\x12\x1b\n" +
-	"\tca_bundle\x18\x06 \x01(\fR\bcaBundleJ\x04\b\x05\x10\x06BLZJgithub.com/GoogleCloudPlatform/confidential_space/proto/gen/google_tdx_tcbb\x06proto3"
+	"\tca_bundle\x18\x06 \x01(\fR\bcaBundleJ\x04\b\x05\x10\x06BLZJgithub.com/GoogleCloudPlatform/confidential-space/proto/gen/google_tdx_tcbb\x06proto3"
 
 var (
 	file_google_tdx_tcb_proto_rawDescOnce sync.Once

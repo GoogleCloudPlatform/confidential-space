@@ -7,7 +7,7 @@
 package confidential_space_platform_rims
 
 import (
-	common "github.com/GoogleCloudPlatform/confidential_space/proto/gen/common"
+	common "github.com/GoogleCloudPlatform/confidential-space/proto/gen/common"
 	attest "github.com/google/go-tpm-tools/proto/attest"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -703,7 +703,7 @@ const file_cs_platform_rims_proto_rawDesc = "" +
 	"\x1cCONF_SPACE_SELF_SIGNED_DB_CA\x10\x01\x12\x0e\n" +
 	"\n" +
 	"COS_DB_V10\x10\x02\x12\x14\n" +
-	"\x10COS_DB_V20250203\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05R\x0ffirmware_policyR\x18earliest_cert_issue_timeB^Z\\github.com/GoogleCloudPlatform/confidential_space/proto/gen/confidential_space_platform_rimsb\x06proto3"
+	"\x10COS_DB_V20250203\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05R\x0ffirmware_policyR\x18earliest_cert_issue_timeB^Z\\github.com/GoogleCloudPlatform/confidential-space/proto/gen/confidential_space_platform_rimsb\x06proto3"
 
 var (
 	file_cs_platform_rims_proto_rawDescOnce sync.Once
