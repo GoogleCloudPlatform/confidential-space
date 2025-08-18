@@ -20,9 +20,9 @@ import (
 	
 	
 
+	"google3/third_party/golang/github_com/golang_jwt/jwt/v/v4/jwt"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 const googleCAURL = "https://pki.goog/roots.pem"

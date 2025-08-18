@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/proto/gen/common";
+
+// Enum for specifying the signature algorithm.
+enum SignatureAlgorithm {
+  SIGNATURE_ALGORITHM_UNSPECIFIED = 0;
+  ECDSA_P256_SHA256 = 1;
+}
