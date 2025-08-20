@@ -18,7 +18,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"google3/third_party/golang/github_com/golang_jwt/jwt/v/v4/jwt"
 
 	"github.com/gorilla/websocket"
 
