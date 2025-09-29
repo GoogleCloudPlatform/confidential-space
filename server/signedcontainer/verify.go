@@ -85,10 +85,10 @@ func Verify(imageDigest string, signatures []*ImageSignature) (*VerifyResult, er
 
 var encoding = base64.StdEncoding
 
-// computeKeyID computes a hexadecimal fingerprint for a public key using SHA256.
+// ComputeKeyID computes a hexadecimal fingerprint for a public key using SHA256.
 // This will generate a keyID that aligns with this openssl command:
 // openssl pkey -pubin -in public_key.pem -outform DER | openssl sha256
-func computeKeyID(pemBytes []byte) (string, error) {
+func ComputeKeyID(pemBytes []byte) (string, error) {
 	derBlock, rest := pem.Decode(pemBytes)
 	if derBlock == nil {
 		return "", errors.New("could not decode public key bytes as PEM")
@@ -110,12 +110,12 @@ func verifySignature(imageDigest string, sig *ImageSignature) (*VerifiedSignatur
 		return nil, errors.New("container image signature is nil")
 	}
 
-	payload, err := unmarshalAndValidate(sig.Payload)
+	payload, err := UnmarshalAndValidate(sig.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal payload: %v", err)
 	}
 
-	publicKey, err := payload.publicKey()
+	publicKey, err := payload.PublicKey()
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func verifySignature(imageDigest string, sig *ImageSignature) (*VerifiedSignatur
 		return nil, fmt.Errorf("failed to verify signature: %v", err)
 	}
 
-	keyID, err := computeKeyID(publicKey)
+	keyID, err := ComputeKeyID(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute keyID: %v", err)
 	}

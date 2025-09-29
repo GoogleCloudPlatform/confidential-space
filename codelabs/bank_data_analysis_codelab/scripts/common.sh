@@ -154,16 +154,28 @@ destroy_kms_key() {
 #   Name of the service-account
 #######################################
 create_service_account() {
-  gcloud iam service-accounts describe ${1} | grep ${1}
+  local sa_name="$1"
+  local project_id="$2" # Accept the project ID as the second argument.
+
+  # Construct the full, unique service account email address.
+  local sa_email="${sa_name}@${project_id}.iam.gserviceaccount.com"
+
+  # Check if the service account already exists IN THE SPECIFIED PROJECT.
+  # Note the addition of the --project flag.
+  gcloud iam service-accounts describe "${sa_email}" --project="${project_id}" >/dev/null 2>&1
+  
   if [[ $? -eq 0 ]]; then
-    echo "Service-account ${1} already exists. Skipping the create of new service-account ..."
+    echo "Service-account ${sa_email} already exists in project ${project_id}. Skipping creation."
   else
-    echo "Creating service-account ${1} ..."
-    gcloud iam service-accounts create ${1}
+    echo "Creating service-account ${sa_name} in project ${project_id}..."
+    # Create the service account IN THE SPECIFIED PROJECT.
+    gcloud iam service-accounts create "${sa_name}" --display-name="${sa_name}" --project="${project_id}"
+    
     if [[ $? -eq 0 ]]; then
-      echo "Service-account ${1} is created successfully."
+      echo "Service-account ${sa_email} is created successfully."
     else
-      err "Failed to create service-account ${1}."
+      echo "Error: Failed to create service-account ${sa_name} in project ${project_id}." >&2
+      return 1
     fi
   fi
 }
@@ -199,7 +211,7 @@ delete_service_account() {
 #   Location
 #######################################
 create_workload_identity_pool() {
-  if [[ "${1}" -lt 4 || "${1}" -gt 32 ]]; then
+  if [[ "${#1}" -lt 4 || "${#1}" -gt 32 ]]; then
     echo "Error: Workload identity pool name '${1}' must be between 4 and 32 characters long." >&2
     return 1
   fi

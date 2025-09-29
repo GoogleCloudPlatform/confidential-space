@@ -48,33 +48,33 @@ func (s signingAlgorithm) string() string {
 
 var unpaddedEncoding = base64.RawStdEncoding
 
-// payload follows the simple signing format specified in
+// Payload follows the simple signing format specified in
 // https://github.com/sigstore/cosign/blob/main/specs/SIGNATURE_SPEC.md#simple-signing
-type payload struct {
-	Critical critical       `json:"critical"`
+type Payload struct {
+	Critical Critical       `json:"critical"`
 	Optional map[string]any `json:"optional"` // Optional represents optional metadata about the image, and its value shouldn't contain any "=" signs.
 }
 
-// critical contains data critical to correctly evaluating the validity of a signature.
-type critical struct {
-	Identity identity `json:"identity"`
-	Image    image    `json:"image"`
+// Critical contains data critical to correctly evaluating the validity of a signature.
+type Critical struct {
+	Identity Identity `json:"identity"`
+	Image    Image    `json:"image"`
 	Type     string   `json:"type"`
 }
 
-// identity identifies the claimed identity of the image.
-type identity struct {
+// Identity identifies the claimed identity of the image.
+type Identity struct {
 	// This field is ignored for cosign semantics as it does not contain either a tag or digest for the image.
 	DockerReference string `json:"docker-reference"`
 }
 
-// image identifies the container image this signature applies to.
-type image struct {
+// Image identifies the container image this signature applies to.
+type Image struct {
 	DockerManifestDigest string `json:"docker-manifest-digest"`
 }
 
-// publicKey retrieves the PEM-encoded public key from the `optional` field of the payload.
-func (p *payload) publicKey() ([]byte, error) {
+// PublicKey retrieves the PEM-encoded public key from the `optional` field of the payload.
+func (p *Payload) PublicKey() ([]byte, error) {
 	publicKey, ok := p.Optional[publicKey].(string)
 	if !ok {
 		return nil, fmt.Errorf("public key not found in the Optional field of payload: %v", p)
@@ -101,7 +101,7 @@ var signingAlgorithmValue = map[string]signingAlgorithm{
 }
 
 // sigAlg retrieves the signing algorithm from the `optional` field of the payload.
-func (p *payload) sigAlg() (signingAlgorithm, error) {
+func (p *Payload) sigAlg() (signingAlgorithm, error) {
 	alg, ok := p.Optional[sigAlgURL].(string)
 	if !ok {
 		return unspecified, fmt.Errorf("signing algorithm not found in the Optional field of payload: %v", p)
@@ -114,8 +114,8 @@ func (p *payload) sigAlg() (signingAlgorithm, error) {
 }
 
 // UnmarshalAndValidate unmarshals a payload from JSON and performs checks on the payload.
-func unmarshalAndValidate(data []byte) (*payload, error) {
-	var pl payload
+func UnmarshalAndValidate(data []byte) (*Payload, error) {
+	var pl Payload
 	if err := json.Unmarshal(data, &pl); err != nil {
 		return nil, err
 	}

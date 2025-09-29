@@ -38,7 +38,7 @@ echo "Uploading the encrypted file to storage bucket ${SECUNDUS_INPUT_STORAGE_BU
 gsutil cp ${PARENT_DIR}/artifacts/secundus_enc_customer_list.csv gs://${SECUNDUS_INPUT_STORAGE_BUCKET}/secundus_enc_customer_list.csv
 
 echo "Creating service-account ${SECUNDUS_SERVICE_ACCOUNT} for secundus bank ..."
-create_service_account ${SECUNDUS_SERVICE_ACCOUNT}
+create_service_account ${SECUNDUS_SERVICE_ACCOUNT} ${SECUNDUS_PROJECT_ID}
 
 echo "Granting KMS decryptor role to the service-account ${SECUNDUS_SERVICE_ACCOUNT}"
 gcloud kms keys add-iam-policy-binding \

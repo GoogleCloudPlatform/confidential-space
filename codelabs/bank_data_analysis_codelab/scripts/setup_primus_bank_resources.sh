@@ -34,7 +34,7 @@ echo "Uploading the encrypted file to storage bucket ${PRIMUS_INPUT_STORAGE_BUCK
 gsutil cp ${PARENT_DIR}/artifacts/primus_enc_customer_list.csv gs://${PRIMUS_INPUT_STORAGE_BUCKET}/primus_enc_customer_list.csv
 
 echo "Creating service-account ${PRIMUS_SERVICE_ACCOUNT} for Primus Bank."
-create_service_account ${PRIMUS_SERVICE_ACCOUNT}
+create_service_account ${PRIMUS_SERVICE_ACCOUNT} ${PRIMUS_PROJECT_ID}
 
 echo "Granting KMS decryptor role to the service-account ${PRIMUS_SERVICE_ACCOUNT} ..."
 gcloud kms keys add-iam-policy-binding \

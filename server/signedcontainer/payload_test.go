@@ -16,12 +16,12 @@ q/hY7zZO8rnRN1xzTwIDAQAB
 
 var (
 	encodedPublicKey = unpaddedEncoding.EncodeToString([]byte(pubKey))
-	testPayload      = &payload{
-		Critical: critical{
-			Identity: identity{
+	testPayload      = &Payload{
+		Critical: Critical{
+			Identity: Identity{
 				DockerReference: "us-docker.pkg.dev/confidential-space-images-dev/cs-cosign-tests/base",
 			},
-			Image: image{
+			Image: Image{
 				DockerManifestDigest: "sha256:9494e567c7c44e8b9f8808c1658a47c9b7979ef3cceef10f48754fc2706802ba",
 			},
 			Type: criticalType,
@@ -33,7 +33,7 @@ func TestUnmarshalPayload(t *testing.T) {
 	testCases := []struct {
 		name         string
 		payloadBytes []byte
-		wantPayload  *payload
+		wantPayload  *Payload
 		wantPass     bool
 	}{
 		{
@@ -58,7 +58,7 @@ func TestUnmarshalPayload(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotPayload, err := unmarshalAndValidate(tc.payloadBytes)
+			gotPayload, err := UnmarshalAndValidate(tc.payloadBytes)
 			if got := err == nil; got != tc.wantPass {
 				t.Errorf("UnmarshalPayload() did not return expected error, got %v, but want %v", got, tc.wantPass)
 			}
@@ -106,7 +106,7 @@ func TestPublicKey(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			testPayload.Optional = tc.annotations
-			gotPublicKey, err := testPayload.publicKey()
+			gotPublicKey, err := testPayload.PublicKey()
 			if err != nil && tc.wantPass {
 				t.Errorf("PublicKey() did not return expected error for test case %v: got %v, but want nil", tc.name, err)
 			}

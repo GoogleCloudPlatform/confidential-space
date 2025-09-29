@@ -82,7 +82,7 @@ func testSig(t *testing.T) (*ImageSignature, *VerifiedSignature) {
 	keyData := []byte(testPubKey)
 	encodedPubKey := base64.RawStdEncoding.EncodeToString(keyData)
 
-	keyID, err := computeKeyID(keyData)
+	keyID, err := ComputeKeyID(keyData)
 	if err != nil {
 		t.Fatal(err)
 	}
