@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package confidential_space;
+
+import "google/protobuf/timestamp.proto";
+import "image_database.proto";
+import "shared.proto";
+
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/platform_rims";
+
+message GoldenMeasurement {
+  // Serialized ConfidentialSpacePlatformRims proto.
+  bytes platform_rims = 1;
+
+  // Signature of image
+  bytes signature = 2;
+
+  // Signature algorithm used to generate the signature
+  common.SignatureAlgorithm signature_algorithm = 3;
+}
+
+message PlatformRims {
+  // Serialized ImageDatabase Proto
+  image_database.ImageDatabase image_database = 1;
+
+  // Time the RIM was published.
+  google.protobuf.Timestamp timestamp = 2;
+
+  // Time after which the RIM should no longer be used.
+  google.protobuf.Timestamp exp = 3;
+
+  // DER format certificate of the key that signed this document.
+  bytes cert = 4;
+
+  reserved 5;  // Reserve 5, make ca_bundle item 6 to match endorsement proto
+
+  // PEM certificates of keys in least intermediate…root order.
+  bytes ca_bundle = 6;
+}
