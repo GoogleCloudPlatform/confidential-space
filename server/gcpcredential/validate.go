@@ -27,7 +27,7 @@ import (
 
 const googleCAURL = "https://pki.goog/roots.pem"
 
-// See https://pki.goog/faq/#faq-27 for more information about Google CAs.
+// See https://pki.goog/faq/#connecting-to-google for more information about Google CAs.
 func defaultHTTPClient() (*http.Client, error) {
 	resp, err := http.Get(googleCAURL)
 	if err != nil {
