@@ -24,13 +24,13 @@ create_service_account "${PRIMUS_SERVICEACCOUNT}"
 echo "Creating workload identity pool "${PRIMUS_WORKLOAD_IDENTITY_POOL}" ..."
 create_workload_identity_pool "${PRIMUS_WORKLOAD_IDENTITY_POOL}" "${PRIMUS_PROJECT_LOCATION}"
 
-gsutil iam ch \
-  serviceAccount:"${PRIMUS_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com:legacyBucketReader \
-  gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"
+gcloud storage buckets add-iam-policy-binding gs://"${PRIMUS_INPUT_STORAGE_BUCKET}" \
+  --member="serviceAccount:${PRIMUS_SERVICEACCOUNT}@${PRIMUS_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.legacyBucketReader"
 
-gsutil iam ch \
-  serviceAccount:"${PRIMUS_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com:objectViewer \
-  gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"
+gcloud storage buckets add-iam-policy-binding gs://"${PRIMUS_INPUT_STORAGE_BUCKET}" \
+  --member="serviceAccount:${PRIMUS_SERVICEACCOUNT}@${PRIMUS_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"
 
 echo "Attaching the service-account "${PRIMUS_SERVICEACCOUNT}" to workload identity pool "${PRIMUS_WORKLOAD_IDENTITY_POOL}" ..."
 gcloud iam service-accounts add-iam-policy-binding "${PRIMUS_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com \

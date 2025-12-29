@@ -35,7 +35,7 @@ gcloud kms encrypt \
     --key=projects/${SECUNDUS_PROJECT_ID}/locations/${SECUNDUS_PROJECT_LOCATION}/keyRings/${SECUNDUS_ENC_KEYRING}/cryptoKeys/${SECUNDUS_ENC_KEY}
 
 echo "Uploading the encrypted file to storage bucket ${SECUNDUS_INPUT_STORAGE_BUCKET} ..."
-gsutil cp ${PARENT_DIR}/artifacts/secundus_enc_customer_list.csv gs://${SECUNDUS_INPUT_STORAGE_BUCKET}/secundus_enc_customer_list.csv
+gcloud storage cp ${PARENT_DIR}/artifacts/secundus_enc_customer_list.csv gs://${SECUNDUS_INPUT_STORAGE_BUCKET}/secundus_enc_customer_list.csv
 
 echo "Creating service-account ${SECUNDUS_SERVICE_ACCOUNT} for secundus bank ..."
 create_service_account ${SECUNDUS_SERVICE_ACCOUNT} ${SECUNDUS_PROJECT_ID}
