@@ -28,11 +28,11 @@ gcloud projects add-iam-policy-binding "${PRIMUS_PROJECT_ID}" \
   --role="roles/logging.logWriter"
 
 echo "Granting objectViewer role for ${PRIMUS_INPUT_STORAGE_BUCKET} to service-account ${WORKLOAD_SERVICEACCOUNT} ..."
-gsutil iam ch \
-  serviceAccount:"${WORKLOAD_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com:objectViewer \
-  gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"
+gcloud storage buckets add-iam-policy-binding gs://"${PRIMUS_INPUT_STORAGE_BUCKET}" \
+  --member="serviceAccount:${WORKLOAD_SERVICEACCOUNT}@${PRIMUS_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"
 
 echo "Granting objectAdmin role for ${PRIMUS_RESULT_STORAGE_BUCKET} to service-account ${WORKLOAD_SERVICEACCOUNT} ..."
-gsutil iam ch \
-  serviceAccount:"${WORKLOAD_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com:objectAdmin \
-  gs://"${PRIMUS_RESULT_STORAGE_BUCKET}"
+gcloud storage buckets add-iam-policy-binding gs://"${PRIMUS_RESULT_STORAGE_BUCKET}" \
+  --member="serviceAccount:${WORKLOAD_SERVICEACCOUNT}@${PRIMUS_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectAdmin"
