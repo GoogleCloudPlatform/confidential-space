@@ -34,15 +34,15 @@ if ! gcloud projects add-iam-policy-binding "${SECUNDUS_PROJECT_ID}" \
 fi
 
 echo "Granting objectViewer role for "${SECUNDUS_INPUT_STORAGE_BUCKET}" to service-account "${WORKLOAD_SERVICEACCOUNT}" ..."
-if ! gsutil iam ch \
-  serviceAccount:"${WORKLOAD_SERVICEACCOUNT}"@"${SECUNDUS_PROJECT_ID}".iam.gserviceaccount.com:objectViewer \
-  gs://"${SECUNDUS_INPUT_STORAGE_BUCKET}"; then
-  err "Failed to grant objectViewer role for "${SECUNDUS_INPUT_STORAGE_BUCKET}" to service-account "${WORKLOAD_SERVICEACCOUNT}"."
+if ! gcloud storage buckets add-iam-policy-binding gs://${SECUNDUS_INPUT_STORAGE_BUCKET} \
+  --member="serviceAccount:${WORKLOAD_SERVICEACCOUNT}@${SECUNDUS_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectViewer"; then
+  err "Failed to grant objectViewer role for ${SECUNDUS_INPUT_STORAGE_BUCKET} to service-account ${WORKLOAD_SERVICEACCOUNT}."
 fi
 
 echo "Granting objectUser role for "${SECUNDUS_RESULT_STORAGE_BUCKET}" to service-account "${WORKLOAD_SERVICEACCOUNT}" ..."
-if ! gsutil iam ch \
-  serviceAccount:"${WORKLOAD_SERVICEACCOUNT}"@"${SECUNDUS_PROJECT_ID}".iam.gserviceaccount.com:objectUser \
-  gs://"${SECUNDUS_RESULT_STORAGE_BUCKET}"; then
-  err "Failed to grant objectUser role for "${SECUNDUS_RESULT_STORAGE_BUCKET}" to service-account "${WORKLOAD_SERVICEACCOUNT}"."
+if ! gcloud storage buckets add-iam-policy-binding gs://"${SECUNDUS_RESULT_STORAGE_BUCKET}" \
+  --member="serviceAccount:${WORKLOAD_SERVICEACCOUNT}@${SECUNDUS_PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/storage.objectUser"; then
+  err "Failed to grant objectUser role for ${SECUNDUS_RESULT_STORAGE_BUCKET} to service-account ${WORKLOAD_SERVICEACCOUNT}."
 fi
