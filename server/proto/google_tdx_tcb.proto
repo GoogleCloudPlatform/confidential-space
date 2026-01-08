@@ -3,20 +3,10 @@ syntax = "proto3";
 package tdxtcb;
 
 import "google/protobuf/timestamp.proto";
-import "shared.proto";
 
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/google_tdx_tcb";
-
-message TDXTCBInfo {
-  // Serialized TCB info proto.
-  bytes gcp_tcb_info = 1;
-
-  // Signature of gcp_tcb_info
-  bytes signature = 2;
-
-  // Signature algorithm used to generate the signature.
-  common.SignatureAlgorithm signature_algorithm = 3;
-}
+option java_multiple_files = true;
+option java_outer_classname = "GoogleTdxTcb";
 
 // IntelRim proto wrapper to allow for schema changes
 message IntelRim {
