@@ -7,6 +7,25 @@ import "proto/attest.proto";
 
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/image_database";
 
+message ConfidentialSpacePlatformRims {
+  // Serialized ImageDatabase Proto
+  ImageDatabase image_database = 1;
+
+  // Time the RIM was published.
+  google.protobuf.Timestamp timestamp = 2;
+
+  // Time after which the RIM should no longer be used.
+  google.protobuf.Timestamp exp = 3;
+
+  // DER format certificate of the key that signed this document.
+  bytes cert = 4;
+
+  reserved 5;  // Reserve 5, make ca_bundle item 6 to match endorsement proto
+
+  // PEM certificates of keys in least intermediate…root order.
+  bytes ca_bundle = 6;
+}
+
 message ImageDatabase {
   enum AttributeLabel {
     NIL = 0;
