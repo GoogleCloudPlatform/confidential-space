@@ -6,8 +6,10 @@ import "google/protobuf/timestamp.proto";
 import "shared.proto";
 
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/google_tdx_tcb";
+option java_multiple_files = true;
+option java_outer_classname = "GoogleTdxTcb";
 
-message TDXTCBInfo {
+message GoldenMeasurement {
   // Serialized TCB info proto.
   bytes gcp_tcb_info = 1;
 
