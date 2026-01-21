@@ -18,14 +18,14 @@ gcloud auth configure-docker "${PRIMUS_PROJECT_REPOSITORY_REGION}"-docker.pkg.de
 echo "Updating workload code with required resource names ..."
 cp "${PARENT_DIR}"/src/sample_inference_server.py "${PARENT_DIR}"/src/inference_server.py
 
-sed -i'' "s/PRIMUS_PROJECT_ID_VALUE/"${PRIMUS_PROJECT_ID}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_KEY_ID_VALUE/"${PRIMUS_ENC_KEY}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_KEYRING_VALUE/"${PRIMUS_ENC_KEYRING}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_SERVICEACCOUNT_VALUE/"${PRIMUS_SERVICEACCOUNT}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_WORKLOAD_IDENTITY_POOL_VALUE/"${PRIMUS_WORKLOAD_IDENTITY_POOL}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_WIP_PROVIDER_VALUE/"${PRIMUS_WIP_PROVIDER}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_PROJECT_NUMBER_VALUE/"${PRIMUS_PROJECT_NUMBER}"/" "${PARENT_DIR}"/src/inference_server.py
-sed -i'' "s/PRIMUS_PROJECT_LOCATION_VALUE/"${PRIMUS_PROJECT_LOCATION}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_PROJECT_ID_VALUE/"${PRIMUS_PROJECT_ID}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_KEY_ID_VALUE/"${PRIMUS_ENC_KEY}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_KEYRING_VALUE/"${PRIMUS_ENC_KEYRING}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_SERVICEACCOUNT_VALUE/"${PRIMUS_SERVICEACCOUNT}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_WORKLOAD_IDENTITY_POOL_VALUE/"${PRIMUS_WORKLOAD_IDENTITY_POOL}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_WIP_PROVIDER_VALUE/"${PRIMUS_WIP_PROVIDER}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_PROJECT_NUMBER_VALUE/"${PRIMUS_PROJECT_NUMBER}"/" "${PARENT_DIR}"/src/inference_server.py
+sed -i '' "s/PRIMUS_PROJECT_LOCATION_VALUE/"${PRIMUS_PROJECT_LOCATION}"/" "${PARENT_DIR}"/src/inference_server.py
 
 echo "Building the workload docker image ..."
 cd "${PARENT_DIR}"/src
