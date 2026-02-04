@@ -42,6 +42,7 @@ message ImageDatabase {
 
   message CCDatabase {
     repeated CCKnownCertificates known_certificates = 1 [packed = false];
+    repeated string known_cert_fingerprints = 3 [packed = false];
 
     repeated string digests = 2;
   }
@@ -78,6 +79,9 @@ message ImageDatabase {
   // Attestation Verifier appraisal policy for verifying Confidential Space
   // attestations.
   ConfidentialSpaceBasePolicy cs_base_policy = 6;
+
+  // Map of known certificates to their DER encoded form.
+  map<string, bytes> known_certs = 7;
 
   reserved 3, 4;
   reserved "firmware_policy", "earliest_cert_issue_time";

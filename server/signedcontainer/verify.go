@@ -42,7 +42,8 @@ func Verify(imageDigest string, signatures []*ImageSignature) (*VerifyResult, er
 	numSignatures := len(signatures)
 	if numSignatures == 0 {
 		return &VerifyResult{}, nil
-	} else if numSignatures > maxSignatureCount {
+	}
+	if numSignatures > maxSignatureCount {
 		return &VerifyResult{}, fmt.Errorf("got %v signatures, should be less than the limit %d", numSignatures, maxSignatureCount)
 	}
 
