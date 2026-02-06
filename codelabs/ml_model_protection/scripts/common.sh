@@ -40,12 +40,12 @@ set_gcp_project() {
 #   Storage bucket name
 #######################################
 create_storage_bucket() {
-  gcloud storage ls | grep "${1}"
+  gsutil ls | grep "${1}"
   if [[ $? -eq 0 ]]; then
     echo "Storage bucket "${1}" already exists. Skipping the creation of new storage bucket ..."
   else
     echo "Storage bucket "${1}" doesn't exists. Creating new storage bucket "${1}" ..."
-    gcloud storage buckets create gs://$1
+    gsutil mb gs://$1
     if [[ $? -eq 0 ]]; then
       echo "Storage bucket "${1}" is created successfully."
     else
@@ -62,10 +62,10 @@ create_storage_bucket() {
 #   Storage bucket name
 #######################################
 delete_storage_bucket() {
-  gcloud storage ls | grep "${1}"
+  gsutil ls | grep "${1}"
   if [[ $? -eq 0 ]]; then
     echo "Deleting the storage bucket "${1}"..."
-    gcloud storage rm --recursive gs://$1
+    gsutil rm -r gs://$1
     if [[ $? -eq 0 ]]; then
       echo "Storage bucket "${1}" is deleted successfully."
     else

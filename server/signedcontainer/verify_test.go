@@ -2,6 +2,7 @@ package signedcontainer
 
 import (
 	"encoding/base64"
+
 	"fmt"
 	"strings"
 	"testing"
@@ -11,11 +12,6 @@ import (
 )
 
 const (
-	testPubKey = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMLdxI5u7ON+1QzJ+njeahioIRU/V
-gqLf36SUAhbJ/Qnof5HkiJfXB/cBawuddv9JfNFL4nXLNZTHfz4uBrPduw==
------END PUBLIC KEY-----`
-
 	// Generate a ECDSA public key by following these steps:
 	// 1. Generate a ECDSA private key using:
 	// openssl ecparam -name prime256v1 -genkey -noout -out ec_private.pem
@@ -79,7 +75,7 @@ func testSig(t *testing.T) (*ImageSignature, *VerifiedSignature) {
 	}
 	testPayloadFmt := `{"critical":{"identity":{"docker-reference":"us-docker.pkg.dev/confidential-space-images-dev/cs-cosign-tests/base"},"image":{"docker-manifest-digest":"sha256:9494e567c7c44e8b9f8808c1658a47c9b7979ef3cceef10f48754fc2706802ba"},"type":"cosign container image signature"},"optional":{"dev.cosignproject.cosign/pub": "%s","dev.cosignproject.cosign/sigalg": "%s"}}`
 
-	keyData := []byte(testPubKey)
+	keyData := []byte(ecdsaPubKey)
 	encodedPubKey := base64.RawStdEncoding.EncodeToString(keyData)
 
 	keyID, err := ComputeKeyID(keyData)
@@ -418,6 +414,52 @@ func TestCreatePublicKeysetHandle(t *testing.T) {
 			_, err := createPublicKeysetHandle([]byte(tc.publicKey), tc.sigAlg)
 			if got := err == nil; got != tc.wantPass {
 				t.Errorf("createPublicKeysetHandle() = %v, but want %v, err %v", got, tc.wantPass, err)
+			}
+		})
+	}
+}
+
+func TestComputeKeyID(t *testing.T) {
+	testCases := []struct {
+		name      string
+		publicKey []byte
+		wantKeyID string
+		wantPass  bool
+	}{
+		{
+			name:      "succeeds",
+			publicKey: []byte(ecdsaPubKey),
+			wantKeyID: "0f13e0b97bd5b669cd5b36ff31211d42f9478adffe4b3131d24b5b75a6bbf630",
+			wantPass:  true,
+		},
+		{
+			name:      "compute nil public key",
+			publicKey: nil,
+			wantKeyID: "",
+			wantPass:  false,
+		},
+		{
+			name:      "compute non PEM public key",
+			publicKey: []byte("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMLdxI5u7ON+1QzJ+njeahioIRU/VgqLf36SUAhbJ/Qnof5HkiJfXB/cBawuddv9JfNFL4nXLNZTHfz4uBrPduw=="),
+			wantKeyID: "",
+			wantPass:  false,
+		},
+		{
+			name:      "trailing data in PEM",
+			publicKey: []byte(ecdsaPubKey + "trailing data"),
+			wantKeyID: "",
+			wantPass:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKeyID, err := ComputeKeyID(tc.publicKey)
+			if err != nil && tc.wantPass {
+				t.Errorf("ComputeKeyID() did not return expected error for test case %v, got %v, but want nil", tc.name, err)
+			}
+			if gotKeyID != tc.wantKeyID {
+				t.Errorf("ComputeKeyID() did not return expected public key ID for test case %v, got %v, but want %v", tc.name, gotKeyID, tc.wantKeyID)
 			}
 		})
 	}

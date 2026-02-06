@@ -34,7 +34,7 @@ gcloud kms encrypt \
     --key=projects/${PRIMUS_PROJECT_ID}/locations/global/keyRings/${PRIMUS_ENC_KEYRING}/cryptoKeys/${PRIMUS_ENC_KEY}
 
 echo "Uploading the encrypted file to storage bucket ${PRIMUS_INPUT_STORAGE_BUCKET}"
-gcloud storage cp ${PARENT_DIR}/artifacts/primus_enc_customer_list.csv gs://${PRIMUS_INPUT_STORAGE_BUCKET}/primus_enc_customer_list.csv
+gsutil cp ${PARENT_DIR}/artifacts/primus_enc_customer_list.csv gs://${PRIMUS_INPUT_STORAGE_BUCKET}/primus_enc_customer_list.csv
 
 echo "Creating service-account ${PRIMUS_SERVICEACCOUNT} for primus bank ..."
 create_service_account ${PRIMUS_SERVICEACCOUNT}
