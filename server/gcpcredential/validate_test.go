@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/api/idtoken"
+	"google.golang.org/api/option"
 )
 
 const testAudience = "testaud"
@@ -95,7 +96,7 @@ func jwkFetchFunc(t *testing.T, jwks *JWKS) func(req *http.Request) *http.Respon
 	}
 }
 
-func TestValidation(t *testing.T) {
+func TestValidateWithMultipleSigners(t *testing.T) {
 	signerA, jwkA := testRSASigner(t, testKeyID+"A")
 	signerB, jwkB := testRSASigner(t, testKeyID+"B")
 	jwks := &JWKS{[]JWK{jwkA, jwkB}}
@@ -110,7 +111,7 @@ func TestValidation(t *testing.T) {
 	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
 	// Validate.
-	emails, err := Validate(context.Background(), validatorClient, testTokens, testAudience)
+	emails, err := Validate(t.Context(), validatorClient, testTokens, testAudience)
 	if err != nil {
 		t.Fatalf("Validate error %v", err)
 	}
@@ -138,7 +139,7 @@ func TestValidateFailsWithInvalidToken(t *testing.T) {
 	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
 	// Validate.
-	if _, err := Validate(context.Background(), validatorClient, []string{"fake.test.token"}, testAudience); err == nil {
+	if _, err := Validate(t.Context(), validatorClient, []string{"fake.test.token"}, testAudience); err == nil {
 		t.Errorf("Validate returned successfully, expected error")
 	}
 
@@ -148,56 +149,69 @@ func TestValidateFailsWithInvalidToken(t *testing.T) {
 	}
 }
 
-func TestValidationOmitsBadToken(t *testing.T) {
+func TestValidation(t *testing.T) {
 	signer, jwk := testRSASigner(t, testKeyID)
 	jwks := &JWKS{[]JWK{jwk}}
 
 	// Returns a hardcoded JWK for token validation.
 	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
 
-	validEmail := "goodtoken@test.com"
-	expectedEmails := []string{validEmail}
-	validToken := testGCPCredential(t, &emailClaims{validEmail, true}, testAudience, testKeyID, signer)
-
 	testcases := []struct {
-		name      string
-		badClaims *emailClaims
+		name           string
+		tokenClaims    []*emailClaims
+		expectedEmails []string
 	}{
 		{
-			name:      "No email claim",
-			badClaims: &emailClaims{EmailVerified: true},
+			name: "Valid tokens",
+			tokenClaims: []*emailClaims{
+				&emailClaims{Email: "goodtoken@test.com", EmailVerified: true},
+				&emailClaims{Email: "alsoagoodtoken@test.com", EmailVerified: true},
+			},
+			expectedEmails: []string{"goodtoken@test.com", "alsoagoodtoken@test.com"},
 		},
 		{
-			name:      "Email unverified",
-			badClaims: &emailClaims{Email: "badtoken@test.com", EmailVerified: false},
+			name: "No email claim",
+			tokenClaims: []*emailClaims{
+				&emailClaims{Email: "goodtoken@test.com", EmailVerified: true},
+				&emailClaims{Email: "", EmailVerified: true},
+			},
+			expectedEmails: []string{"goodtoken@test.com"},
+		},
+		{
+			name: "Email unverified",
+			tokenClaims: []*emailClaims{
+				&emailClaims{Email: "goodtoken@test.com", EmailVerified: true},
+				&emailClaims{Email: "badtoken@test.com", EmailVerified: false},
+			},
+			expectedEmails: []string{"goodtoken@test.com"},
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Given a valid token and a "bad" token (ex. unverified email), expect to only return the former.
-			badToken := testGCPCredential(t, tc.badClaims, testAudience, testKeyID, signer)
-
-			testTokens := []string{validToken, badToken}
+			tokens := make([]string, len(tc.tokenClaims))
+			for i, claims := range tc.tokenClaims {
+				tokens[i] = testGCPCredential(t, claims, testAudience, testKeyID, signer)
+			}
 
 			// Validate.
-			emails, err := Validate(context.Background(), validatorClient, testTokens, testAudience)
+			emails, err := Validate(t.Context(), validatorClient, tokens, testAudience)
 			if err != nil {
 				t.Fatalf("Validate error %v", err)
 			}
 
-			if !cmp.Equal(emails, expectedEmails) {
-				t.Errorf("Validate did not return expected emails: got %v, want %v", emails, expectedEmails)
+			if !cmp.Equal(emails, tc.expectedEmails) {
+				t.Errorf("Validate did not return expected emails: got %v, want %v", emails, tc.expectedEmails)
 			}
 
 			// ValidateWithJWKS.
-			emails, err = ValidateWithJWKS(jwks, testTokens, testAudience)
+			emails, err = ValidateWithJWKS(jwks, tokens, testAudience)
 			if err != nil {
 				t.Fatalf("ValidateWithJWKS error %v", err)
 			}
 
-			if !cmp.Equal(emails, expectedEmails) {
-				t.Errorf("ValidateWithJWKS did not return expected emails: got %v, want %v", emails, expectedEmails)
+			if !cmp.Equal(emails, tc.expectedEmails) {
+				t.Errorf("ValidateWithJWKS did not return expected emails: got %v, want %v", emails, tc.expectedEmails)
 			}
 
 		})
@@ -265,6 +279,34 @@ func TestValidateWithECDSASigner(t *testing.T) {
 
 	if !cmp.Equal(emails, expectedEmails) {
 		t.Errorf("ValidateWithJWKS did not return expected emails: got %v, want %v", emails, expectedEmails)
+	}
+}
+
+func TestValidateWithOptions(t *testing.T) {
+	signerA, jwkA := testRSASigner(t, testKeyID+"A")
+	signerB, jwkB := testRSASigner(t, testKeyID+"B")
+	jwks := &JWKS{[]JWK{jwkA, jwkB}}
+
+	expectedEmails := []string{"tokenA@test.com", "tokenB@test.com"}
+	testTokens := []string{
+		testGCPCredential(t, &emailClaims{expectedEmails[0], true}, testAudience, testKeyID+"A", signerA),
+		testGCPCredential(t, &emailClaims{expectedEmails[1], true}, testAudience, testKeyID+"B", signerB),
+	}
+
+	// Returns a hardcoded JWK for token validation.
+	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
+	validatorOpts := []idtoken.ClientOption{
+		option.WithoutAuthentication(),
+		option.WithHTTPClient(validatorClient),
+	}
+
+	got, err := ValidateWithOptions(t.Context(), testTokens, testAudience, validatorOpts)
+	if err != nil {
+		t.Errorf("ValidateWithOptions(%v, %q, %v) returned an unexpected error: %v", testTokens, testAudience, validatorOpts, err)
+	}
+
+	if diff := cmp.Diff(expectedEmails, got); diff != "" {
+		t.Errorf("ValidateWithOptions(%v, %q, %v) returned an unexpected diff (-want +got): %v", testTokens, testAudience, validatorOpts, diff)
 	}
 }
 
