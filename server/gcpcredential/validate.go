@@ -70,7 +70,12 @@ func Validate(ctx context.Context, client *http.Client, credentials []string, ex
 		option.WithHTTPClient(client),
 	}
 
-	v, err := idtoken.NewValidator(ctx, validatorOptions...)
+	return ValidateWithOptions(ctx, credentials, expectedAudience, validatorOptions)
+}
+
+// ValidateWithOptions validates each of the provided credentials, then returns the emails of the successfully verified tokens/emails.
+func ValidateWithOptions(ctx context.Context, credentials []string, expectedAudience string, opts []idtoken.ClientOption) ([]string, error) {
+	v, err := idtoken.NewValidator(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not create ID token validator: %v", err.Error())
 	}
