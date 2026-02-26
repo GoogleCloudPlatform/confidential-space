@@ -4,6 +4,12 @@ package models
 const (
 	// WorkloadAttestationLabel is the label used by Confidential Space.
 	WorkloadAttestationLabel = "WORKLOAD_ATTESTATION"
+
+	// KeyAttestationLabel is the label used for Key Attestation.
+	KeyAttestationLabel = "KEY_ATTESTATION"
+
+	// HostAttestationLabel is the label used for Host Attestation.
+	HostAttestationLabel = "HOST_ATTESTATION"
 )
 
 // VMAttestation represents a standalone attestation over a challenge provided by the workload.
