@@ -39,7 +39,17 @@ jobs:
           ./buildprotos.sh
       - name: Check for changes
         id: git-check
-        run: echo "changed=$(if git diff --exit-code --quiet; then echo 'false'; else echo 'true'; fi)" >> $GITHUB_OUTPUT
+        run: |
+          CHANGES=$(git status --porcelain -- server/proto/**.pb.go)
+          if [[ -n "$CHANGES" ]]; then
+            echo "Found changes:"
+            echo "$CHANGES"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes found for server/proto/**.pb.go"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
       - name: Commit and push generated files
         if: steps.git-check.outputs.changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
