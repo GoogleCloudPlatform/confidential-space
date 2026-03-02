@@ -8,4 +8,4 @@ protoc -I. \
   -I/usr/local/include \
   --go_out=. \
   --go_opt=module=github.com/GoogleCloudPlatform/confidential-space/server/proto \
-  google_tdx_tcb.proto image_database.proto platform_rims.proto shared.proto
+  *.proto

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package confidential_space;
 
-option go_package = "github.com/GoogleCloudPlatform/confidential-space/proto";
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation";
 option java_multiple_files = true;
 option java_outer_classname = "Attestation";
 
