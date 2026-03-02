@@ -38,6 +38,7 @@ message ImageDatabase {
     CONF_SPACE_SELF_SIGNED_DB_CA = 1;
     COS_DB_V10 = 2;
     COS_DB_V20250203 = 3;
+    COS_DB_V20251004 = 4;
   }
 
   message CCDatabase {

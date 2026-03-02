@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang/glog v1.2.2
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc
 	github.com/google/go-eventlog v0.0.3-0.20250319220925-32d08db9b6f9
