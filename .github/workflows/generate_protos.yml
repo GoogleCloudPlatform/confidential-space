@@ -40,13 +40,13 @@ jobs:
       - name: Check for changes
         id: git-check
         run: |
-          CHANGES=$(git status --porcelain -- server/proto/**.pb.go)
+          CHANGES=$(git status --porcelain -- **.pb.go)
           if [[ -n "$CHANGES" ]]; then
             echo "Found changes:"
             echo "$CHANGES"
             echo "changed=true" >> $GITHUB_OUTPUT
           else
-            echo "No changes found for server/proto/**.pb.go"
+            echo "No changes found for **.pb.go"
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
         shell: bash
@@ -55,6 +55,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "AUTO: Generate Go proto files"
-          file_pattern: "server/proto/**.pb.go"
+          file_pattern: "**.pb.go"
           push_options: '--force-with-lease'
-
