@@ -113,10 +113,6 @@ message VmAttestation {
 
   // report_data is `SHA512(label || SHA512(challenge || SHA512(extra_data)))`
   VmAttestationQuote quote = 4;
-
-  // Binary-serialized instances of DeviceAttestationReport for attached
-  // devices. Corresponds to an entry in the VM's boot log.
-  repeated string device_reports = 5;
 }
 
 message KeyAttestation {
