@@ -64,6 +64,10 @@ message NvidiaAttestationReport {
     // Multi-GPU Secure Passthrough (MPT) attestation.
     MultiGpuSecurePassthroughAttestation mpt = 3;  // MPT attestation.
   }
+
+  // The nonce used for GPU attestation.
+  bytes nonce = 4;
+
   reserved 2;
 }
 
