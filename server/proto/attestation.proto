@@ -113,6 +113,9 @@ message VmAttestation {
 
   // report_data is `SHA512(label || SHA512(challenge || SHA512(extra_data)))`
   VmAttestationQuote quote = 4;
+
+  // Runtime attestations for attached devices.
+  repeated DeviceAttestationReport device_reports = 5;
 }
 
 message KeyAttestation {
