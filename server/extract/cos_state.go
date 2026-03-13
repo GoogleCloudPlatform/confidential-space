@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/coscel"
+	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
 	"github.com/google/go-eventlog/cel"
+	"google.golang.org/protobuf/proto"
 	pb "github.com/google/go-tpm-tools/proto/attest"
 )
 
@@ -110,6 +112,20 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosStat
 				enabled = true
 			}
 			cosState.HealthMonitoring.MemoryEnabled = &enabled
+		case coscel.GpuCCModeType:
+			if cosState.GpuDeviceState == nil {
+				cosState.GpuDeviceState = &pb.GpuDeviceState{}
+			}
+			ccMode, ok := pb.GPUDeviceCCMode_value[string(cosTlv.EventContent)]
+			if !ok {
+				return nil, fmt.Errorf("unknown GPU device CC mode in COS eventlog: %s", string(cosTlv.EventContent))
+			}
+			cosState.GpuDeviceState.CcMode = pb.GPUDeviceCCMode(ccMode)
+		case coscel.GPUDeviceAttestationBindingType:
+			report := &attestpb.NvidiaAttestationReport{}
+			if err := proto.Unmarshal(cosTlv.EventContent, report); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal GPU attestation report: %v", err)
+			}
 		default:
 			return nil, fmt.Errorf("found unknown COS Event Type %v", cosTlv.EventType)
 		}
