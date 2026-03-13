@@ -2,20 +2,54 @@
 package extract
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/coscel"
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
 	"github.com/google/go-eventlog/cel"
+	"github.com/google/go-eventlog/register"
 	"google.golang.org/protobuf/proto"
 	pb "github.com/google/go-tpm-tools/proto/attest"
 )
+
+// ParseCOSCEL takes an encoded Attested COS CEL and MR bank, replays the CEL against the MRs,
+// and returns the AttestedCosState.
+func ParseCOSCEL(cosEventLog []byte, p register.MRBank) (*pb.AttestedCosState, error) {
+	switch p.(type) {
+	case register.PCRBank:
+		return getCOSStateFromCEL(cosEventLog, p, cel.PCRType)
+	case register.RTMRBank:
+		return getCOSStateFromCEL(cosEventLog, p, cel.CCMRType)
+	default:
+		return nil, fmt.Errorf("unknown register type %T", p)
+	}
+}
+
+func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, trustingRegisterType cel.MRType) (*pb.AttestedCosState, error) {
+	decodedCEL, err := cel.DecodeToCEL(bytes.NewBuffer(rawCanonicalEventLog))
+	if err != nil {
+		return nil, err
+	}
+	// Validate the COS event log first.
+	if err := decodedCEL.Replay(register); err != nil {
+		return nil, err
+	}
+
+	cosState, err := VerifiedCOSState(decodedCEL, uint8(trustingRegisterType))
+	if err != nil {
+		return nil, err
+	}
+
+	return cosState, err
+}
 
 // VerifiedCOSState returns the AttestedCosState from the given event log.
 func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosState, error) {
 	cosState := &pb.AttestedCosState{}
 	cosState.Container = &pb.ContainerState{}
 	cosState.HealthMonitoring = &pb.HealthMonitoringState{}
+	cosState.GpuDeviceState = &pb.GpuDeviceState{}
 	cosState.Container.Args = make([]string, 0)
 	cosState.Container.EnvVars = make(map[string]string)
 	cosState.Container.OverriddenEnvVars = make(map[string]string)
