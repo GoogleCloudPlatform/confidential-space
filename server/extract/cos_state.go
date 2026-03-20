@@ -160,6 +160,7 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosStat
 			if err := proto.Unmarshal(cosTlv.EventContent, report); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal GPU attestation report: %v", err)
 			}
+			cosState.GpuDeviceState.NvidiaAttestationReport = report
 		default:
 			return nil, fmt.Errorf("found unknown COS Event Type %v", cosTlv.EventType)
 		}
