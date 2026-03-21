@@ -13,6 +13,11 @@ import (
 	pb "github.com/google/go-tpm-tools/proto/attest"
 )
 
+// Options contains the options for parsing the COS event log.
+type Options struct {
+	PopulateGpuDeviceState bool // Whether to populate the GPU device state default is false.
+}
+
 // ParseCOSCEL takes an encoded Attested COS CEL and MR bank, replays the CEL against the MRs,
 // and returns the AttestedCosState.
 func ParseCOSCEL(cosEventLog []byte, p register.MRBank) (*pb.AttestedCosState, error) {
@@ -36,7 +41,7 @@ func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, t
 		return nil, err
 	}
 
-	cosState, err := VerifiedCOSState(decodedCEL, uint8(trustingRegisterType))
+	cosState, err := VerifiedCOSState(decodedCEL, uint8(trustingRegisterType), Options{})
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +50,7 @@ func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, t
 }
 
 // VerifiedCOSState returns the AttestedCosState from the given event log.
-func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosState, error) {
+func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.AttestedCosState, error) {
 	cosState := &pb.AttestedCosState{}
 	cosState.Container = &pb.ContainerState{}
 	cosState.HealthMonitoring = &pb.HealthMonitoringState{}
@@ -156,10 +161,14 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8) (*pb.AttestedCosStat
 			}
 			cosState.GpuDeviceState.CcMode = pb.GPUDeviceCCMode(ccMode)
 		case coscel.GPUDeviceAttestationBindingType:
-			report := &attestpb.NvidiaAttestationReport{}
-			if err := proto.Unmarshal(cosTlv.EventContent, report); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal GPU attestation report: %v", err)
+			if opts.PopulateGpuDeviceState {
+				report := &attestpb.NvidiaAttestationReport{}
+				if err := proto.Unmarshal(cosTlv.EventContent, report); err != nil {
+					return nil, fmt.Errorf("failed to unmarshal GPU attestation report: %v", err)
+				}
+				cosState.GpuDeviceState.NvidiaAttestationReport = report
 			}
+
 		default:
 			return nil, fmt.Errorf("found unknown COS Event Type %v", cosTlv.EventType)
 		}

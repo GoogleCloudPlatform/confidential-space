@@ -29,10 +29,6 @@ import (
 func TestVerifiedCosStateRTMR(t *testing.T) {
 	cosEventLog := cel.NewConfComputeMR()
 
-	wantGpuDeviceState := attestationpb.GpuDeviceState{
-		CcMode: attestationpb.GPUDeviceCCMode_ON,
-	}
-
 	report := &attestpb.NvidiaAttestationReport{
 		CcFeature: &attestpb.NvidiaAttestationReport_Spt{
 			Spt: &attestpb.NvidiaAttestationReport_SinglePassthroughAttestation{
@@ -48,6 +44,11 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 	gpuEvidenceBytes, err := proto.Marshal(report)
 	if err != nil {
 		t.Fatalf("failed to marshal mock GPU evidence: %v", err)
+	}
+
+	wantGpuDeviceState := attestationpb.GpuDeviceState{
+		CcMode:                  attestationpb.GPUDeviceCCMode_ON,
+		NvidiaAttestationReport: report,
 	}
 
 	// add events
@@ -104,7 +105,7 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 		}
 	}
 
-	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType))
+	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType), Options{PopulateGpuDeviceState: true})
 	if err != nil {
 		t.Error(err)
 	}
@@ -125,7 +126,7 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 
 func TestVerifiedCosStateRTMRWithEmptyLog(t *testing.T) {
 	cosEventLog := cel.NewConfComputeMR()
-	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType))
+	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType), Options{PopulateGpuDeviceState: true})
 	if err != nil {
 		t.Errorf("VerifiedCOSState() with empty log returned error %v, want nil", err)
 	}
