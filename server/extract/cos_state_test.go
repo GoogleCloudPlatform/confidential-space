@@ -26,13 +26,8 @@ import (
 	"github.com/google/go-tpm-tools/simulator"
 )
 
-func TestVerifiedCosStateRTMR(t *testing.T) {
-	cosEventLog := cel.NewConfComputeMR()
-
-	wantGpuDeviceState := attestationpb.GpuDeviceState{
-		CcMode: attestationpb.GPUDeviceCCMode_ON,
-	}
-
+func testGpuReport(t *testing.T) (*attestpb.NvidiaAttestationReport, []byte) {
+	t.Helper()
 	report := &attestpb.NvidiaAttestationReport{
 		CcFeature: &attestpb.NvidiaAttestationReport_Spt{
 			Spt: &attestpb.NvidiaAttestationReport_SinglePassthroughAttestation{
@@ -48,6 +43,18 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 	gpuEvidenceBytes, err := proto.Marshal(report)
 	if err != nil {
 		t.Fatalf("failed to marshal mock GPU evidence: %v", err)
+	}
+	return report, gpuEvidenceBytes
+}
+
+func TestVerifiedCosStateRTMR(t *testing.T) {
+	cosEventLog := cel.NewConfComputeMR()
+
+	report, gpuEvidenceBytes := testGpuReport(t)
+
+	wantGpuDeviceState := attestationpb.GpuDeviceState{
+		CcMode:                  attestationpb.GPUDeviceCCMode_ON,
+		NvidiaAttestationReport: report,
 	}
 
 	// add events
@@ -104,7 +111,7 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 		}
 	}
 
-	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType))
+	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType), Options{PopulateGpuDeviceState: true})
 	if err != nil {
 		t.Error(err)
 	}
@@ -121,11 +128,21 @@ func TestVerifiedCosStateRTMR(t *testing.T) {
 		t.Errorf("unexpected GPU device state diff: \n%v", diff)
 	}
 
+	cosStateNoGpu, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType), Options{})
+	if err != nil {
+		t.Errorf("VerifiedCOSState with empty options returned unexpected error: %v", err)
+	}
+	wantGpuDeviceStateNoGpu := attestationpb.GpuDeviceState{
+		CcMode: attestationpb.GPUDeviceCCMode_ON,
+	}
+	if diff := cmp.Diff(cosStateNoGpu.GpuDeviceState, &wantGpuDeviceStateNoGpu, protocmp.Transform()); diff != "" {
+		t.Errorf("unexpected GPU device state diff with empty options: \n%v", diff)
+	}
 }
 
 func TestVerifiedCosStateRTMRWithEmptyLog(t *testing.T) {
 	cosEventLog := cel.NewConfComputeMR()
-	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType))
+	cosState, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType), Options{PopulateGpuDeviceState: true})
 	if err != nil {
 		t.Errorf("VerifiedCOSState() with empty log returned error %v, want nil", err)
 	}
@@ -142,6 +159,14 @@ func TestVerifiedCosStateRTMRWithEmptyLog(t *testing.T) {
 
 	if diff := cmp.Diff(cosState, wantCosState, protocmp.Transform()); diff != "" {
 		t.Errorf("unexpected cos state diff: \n%v", diff)
+	}
+
+	cosStateNoGpu, err := VerifiedCOSState(cosEventLog, uint8(cel.CCMRType), Options{})
+	if err != nil {
+		t.Errorf("VerifiedCOSState() with empty log and empty options returned error %v, want nil", err)
+	}
+	if diff := cmp.Diff(cosStateNoGpu, wantCosState, protocmp.Transform()); diff != "" {
+		t.Errorf("unexpected cos state diff with empty options: \n%v", diff)
 	}
 }
 
@@ -190,7 +215,7 @@ func TestParsingRTMREventlog(t *testing.T) {
 	fakeRTMR := fakertmr.CreateRtmrSubsystem(t.TempDir())
 	rtmrBank := getRTMRBank(t, fakeRTMR)
 
-	acosState, err := ParseCOSCEL(buf.Bytes(), rtmrBank)
+	acosState, err := ParseCOSCEL(buf.Bytes(), rtmrBank, Options{})
 	if err != nil {
 		t.Fatalf("expecting no error from ParseCOSCEL(), but get %v", err)
 	}
@@ -206,6 +231,8 @@ func TestParsingRTMREventlog(t *testing.T) {
 	if diff := cmp.Diff(acosState.GpuDeviceState, &emptyGpuDeviceState, protocmp.Transform()); diff != "" {
 		t.Errorf("unexpected GPU device state difference:\n%v", diff)
 	}
+
+	report, gpuEvidenceBytes := testGpuReport(t)
 
 	// add events
 	testCELEvents := []struct {
@@ -226,6 +253,7 @@ func TestParsingRTMREventlog(t *testing.T) {
 		{coscel.ArgType, coscel.EventRTMRIndex, []byte("")},
 		{coscel.MemoryMonitorType, coscel.EventRTMRIndex, []byte{1}},
 		{coscel.GpuCCModeType, coscel.EventRTMRIndex, []byte(attestationpb.GPUDeviceCCMode_ON.String())},
+		{coscel.GPUDeviceAttestationBindingType, coscel.EventRTMRIndex, gpuEvidenceBytes},
 	}
 
 	expectedEnvVars := make(map[string]string)
@@ -249,6 +277,10 @@ func TestParsingRTMREventlog(t *testing.T) {
 	wantGpuDeviceState := attestationpb.GpuDeviceState{
 		CcMode: attestationpb.GPUDeviceCCMode_ON,
 	}
+	wantGpuDeviceStateWithReport := attestationpb.GpuDeviceState{
+		CcMode:                  attestationpb.GPUDeviceCCMode_ON,
+		NvidiaAttestationReport: report,
+	}
 
 	for _, testEvent := range testCELEvents {
 		cosEvent := coscel.COSTLV{EventType: testEvent.cosNestedEventType, EventContent: testEvent.eventPayload}
@@ -265,7 +297,7 @@ func TestParsingRTMREventlog(t *testing.T) {
 
 	rtmrBank = getRTMRBank(t, fakeRTMR)
 
-	if acosState, err := ParseCOSCEL(buf.Bytes(), rtmrBank); err != nil {
+	if acosState, err := ParseCOSCEL(buf.Bytes(), rtmrBank, Options{}); err != nil {
 		t.Errorf("expecting no error from ParseCOSCEL(), but get %v", err)
 	} else {
 		if diff := cmp.Diff(acosState.Container, &wantContainerState, protocmp.Transform()); diff != "" {
@@ -279,6 +311,20 @@ func TestParsingRTMREventlog(t *testing.T) {
 		}
 	}
 
+	if acosState, err := ParseCOSCEL(buf.Bytes(), rtmrBank, Options{PopulateGpuDeviceState: true}); err != nil {
+		t.Errorf("expecting no error from ParseCOSCEL(), but get %v", err)
+	} else {
+		if diff := cmp.Diff(acosState.Container, &wantContainerState, protocmp.Transform()); diff != "" {
+			t.Errorf("unexpected container state difference:\n%v", diff)
+		}
+		if diff := cmp.Diff(acosState.HealthMonitoring, &wantHealthMonitoringState, protocmp.Transform()); diff != "" {
+			t.Errorf("unexpected health monitoring state difference:\n%v", diff)
+		}
+		if diff := cmp.Diff(acosState.GpuDeviceState, &wantGpuDeviceStateWithReport, protocmp.Transform()); diff != "" {
+			t.Errorf("unexpected GPU device state difference:\n%v", diff)
+		}
+	}
+
 	// Faking PCR with RTMR should fail
 	imposterPcrBank := map[uint32][]byte{}
 	imposterPcrBank[1] = rtmrBank.RTMRs[0].Digest
@@ -287,7 +333,7 @@ func TestParsingRTMREventlog(t *testing.T) {
 	imposterPcrBank[4] = rtmrBank.RTMRs[3].Digest
 	imposterPcrs := &pb.PCRs{Hash: pb.HashAlgo_SHA384, Pcrs: imposterPcrBank}
 	hackedPCRBank := convertToPCRBank(t, imposterPcrs)
-	if _, err = ParseCOSCEL(buf.Bytes(), hackedPCRBank); err == nil {
+	if _, err = ParseCOSCEL(buf.Bytes(), hackedPCRBank, Options{}); err == nil {
 		t.Errorf("expecting error from ParseCOSCEL() when using RTMR CEL Log, but get nil")
 	}
 }
@@ -317,7 +363,7 @@ func TestParsingCELEventLog(t *testing.T) {
 	for _, bank := range banks {
 		pcrBank := convertToPCRBank(t, bank)
 		// pcrs can have any value here, since the cel has no records, the replay should always success.
-		acosState, err := ParseCOSCEL(buf.Bytes(), pcrBank)
+		acosState, err := ParseCOSCEL(buf.Bytes(), pcrBank, Options{})
 		if err != nil {
 			t.Fatalf("expecting no error from ParseCOSCEL(), but get %v", err)
 		}
@@ -334,6 +380,8 @@ func TestParsingCELEventLog(t *testing.T) {
 			t.Errorf("unexpected GPU device state difference:\n%v", diff)
 		}
 	}
+
+	report, gpuEvidenceBytes := testGpuReport(t)
 
 	// Secondly, append some real COS events to the CEL. This time we should get content in the CosState.
 	testCELEvents := []struct {
@@ -354,6 +402,7 @@ func TestParsingCELEventLog(t *testing.T) {
 		{coscel.ArgType, coscel.EventPCRIndex, []byte("")},
 		{coscel.MemoryMonitorType, coscel.EventPCRIndex, []byte{1}},
 		{coscel.GpuCCModeType, coscel.EventPCRIndex, []byte(attestationpb.GPUDeviceCCMode_ON.String())},
+		{coscel.GPUDeviceAttestationBindingType, coscel.EventPCRIndex, gpuEvidenceBytes},
 	}
 
 	expectedEnvVars := make(map[string]string)
@@ -376,6 +425,10 @@ func TestParsingCELEventLog(t *testing.T) {
 	}
 	wantGpuDeviceState := attestationpb.GpuDeviceState{
 		CcMode: attestationpb.GPUDeviceCCMode_ON,
+	}
+	wantGpuDeviceStateWithReport := attestationpb.GpuDeviceState{
+		CcMode:                  attestationpb.GPUDeviceCCMode_ON,
+		NvidiaAttestationReport: report,
 	}
 	banks, err = client.ReadAllPCRs(tpm)
 	if err != nil {
@@ -400,7 +453,7 @@ func TestParsingCELEventLog(t *testing.T) {
 	for _, bank := range banks {
 		pcrBank := convertToPCRBank(t, bank)
 
-		if acosState, err := ParseCOSCEL(buf.Bytes(), pcrBank); err != nil {
+		if acosState, err := ParseCOSCEL(buf.Bytes(), pcrBank, Options{PopulateGpuDeviceState: false}); err != nil {
 			t.Errorf("expecting no error from ParseCOSCEL(), but get %v", err)
 		} else {
 			if diff := cmp.Diff(acosState.Container, &wantContainerState, protocmp.Transform()); diff != "" {
@@ -410,6 +463,20 @@ func TestParsingCELEventLog(t *testing.T) {
 				t.Errorf("unexpected health monitoring state difference:\n%v", diff)
 			}
 			if diff := cmp.Diff(acosState.GpuDeviceState, &wantGpuDeviceState, protocmp.Transform()); diff != "" {
+				t.Errorf("unexpected GPU device state difference:\n%v", diff)
+			}
+		}
+
+		if acosState, err := ParseCOSCEL(buf.Bytes(), pcrBank, Options{PopulateGpuDeviceState: true}); err != nil {
+			t.Errorf("expecting no error from ParseCOSCEL(), but get %v", err)
+		} else {
+			if diff := cmp.Diff(acosState.Container, &wantContainerState, protocmp.Transform()); diff != "" {
+				t.Errorf("unexpected container state difference:\n%v", diff)
+			}
+			if diff := cmp.Diff(acosState.HealthMonitoring, &wantHealthMonitoringState, protocmp.Transform()); diff != "" {
+				t.Errorf("unexpected health monitoring state difference:\n%v", diff)
+			}
+			if diff := cmp.Diff(acosState.GpuDeviceState, &wantGpuDeviceStateWithReport, protocmp.Transform()); diff != "" {
 				t.Errorf("unexpected GPU device state difference:\n%v", diff)
 			}
 		}
@@ -433,7 +500,7 @@ func TestParsingCELEventLog(t *testing.T) {
 	}
 	for _, bank := range banks {
 		pcrBank := convertToPCRBank(t, bank)
-		_, err := ParseCOSCEL(buf.Bytes(), pcrBank)
+		_, err := ParseCOSCEL(buf.Bytes(), pcrBank, Options{})
 		if err == nil {
 			t.Errorf("expected error when parsing event log with unknown content type")
 		}
