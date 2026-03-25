@@ -6,7 +6,7 @@ toolchain go1.24.13
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/golang/glog v1.2.2
+	github.com/golang/glog v1.2.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-configfs-tsm v0.3.3-0.20240919001351-b4b5b84fdcbc
 	github.com/google/go-eventlog v0.0.3-0.20260305053119-5cd85087f9f9
