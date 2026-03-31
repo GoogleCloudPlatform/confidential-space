@@ -83,7 +83,7 @@ func validateBaseValues(sb *attestpb.SecureBootState, imageBaseVersion uint32, i
 	dbCert := imageBaseValues.GetDb().GetKnownCertificates()[0]
 
 	// Get the known cert by DER corresponding to the image db cert.
-	knownCert := knownCertificate(dbCert)
+	knownCert := KnownCertificate(dbCert)
 	if knownCert == nil {
 		return errors.New("image DB does not have a known certificate")
 	}
@@ -102,7 +102,8 @@ func validateBaseValues(sb *attestpb.SecureBootState, imageBaseVersion uint32, i
 	return nil
 }
 
-func knownCertificate(known rimpb.ImageDatabase_CCKnownCertificates) *x509.Certificate {
+// KnownCertificate returns the *x509.Certificate for a given rimpb.ImageDatabase_CCKnownCertificates enum value.
+func KnownCertificate(known rimpb.ImageDatabase_CCKnownCertificates) *x509.Certificate {
 	switch known {
 	case rimpb.ImageDatabase_COS_DB_V10:
 		return data.COSDBv10Cert
