@@ -50,7 +50,7 @@ func TestKnownCertificate(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := knownCertificate(tc.certProto)
+		got := KnownCertificate(tc.certProto)
 		if diff := cmp.Diff(got, tc.want); diff != "" {
 			t.Errorf("KnownCertificate(%+v) returned unexpected diff (-want +got):\n%s", tc.certProto, diff)
 		}
