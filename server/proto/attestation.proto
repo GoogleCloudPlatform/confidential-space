@@ -205,6 +205,9 @@ message TpmQuote {
 // TPM on certain platforms is electrically integrated such that it can report,
 // via reserved NV index, the number of warm resets the CPU has undergone since
 // the last power cycle.
+//
+// Each signature within this message can be verified using the TpmQuote's
+// `endorsement` field.
 message TpmAuxiliaryAttestation {
   message SignedNvCertify {
     reserved 1;
