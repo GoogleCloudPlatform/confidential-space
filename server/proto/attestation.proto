@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package confidential_space;
 
+import "third_party/golang/github_com/google/go_eventlog/v/v0/proto/state.proto";
+
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation";
 option java_multiple_files = true;
 option java_outer_classname = "Attestation";
@@ -240,4 +242,12 @@ message HostAttestation {
 
   // Auxiliary information not stored in PCRs, such as warm reset data.
   TpmAuxiliaryAttestation aux_attestation = 5;
+}
+
+message HostACOSState {
+  // The Google Measurement State of the host machine.
+  state.GMESState gmes = 1;
+
+  // The TDX CPU PIID.
+  bytes cpu_piid = 2;
 }
