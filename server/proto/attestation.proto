@@ -198,8 +198,7 @@ message TpmQuote {
   // The event log containing Attested COS launcher events.
   bytes cel_launch_event_log = 3;
 
-  // Endorsement for the TPM attestation.
-  TpmAttestationEndorsement endorsement = 4;
+  reserved 4;
 }
 
 // Provides attestations for values not present in PCRs. For example, the Titan
@@ -240,4 +239,8 @@ message HostAttestation {
 
   // Auxiliary information not stored in PCRs, such as warm reset data.
   TpmAuxiliaryAttestation aux_attestation = 5;
+
+  // Endorsement for the key used to generate TPMT_SIGNATURE statements in
+  // `tpm_quote` and `aux_attestation`.
+  TpmAttestationEndorsement endorsement = 6;
 }
