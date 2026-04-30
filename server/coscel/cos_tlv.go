@@ -34,7 +34,7 @@ const (
 // ContentType represent a COS content type in a CEL record content.
 type ContentType uint8
 
-// Type for COS nested events
+// Type for COS nested events.
 const (
 	ImageRefType ContentType = iota
 	ImageDigestType
