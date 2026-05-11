@@ -213,10 +213,9 @@ message TpmQuote {
 // `endorsement` field.
 message TpmAuxiliaryAttestation {
   message SignedNvCertify {
-    reserved 1;
-    bytes nv_data = 2;         // The raw data within the NV index.
+    reserved 1, 2;
     bytes tpms_nv_public = 3;  // Used to compute the Name of the NV index.
-    bytes tpms_attest = 4;     // Contains a TPMS_NV_DIGEST_CERTIFY_INFO.
+    bytes tpms_attest = 4;     // Contains a TPMS_NV_CERTIFY_INFO.
     bytes tpmt_signature = 5;  // Contains the signature.
   }
 
