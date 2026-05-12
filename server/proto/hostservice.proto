@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package hostservice;
+
+import "attestation.proto";
+
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/hostservice";
+option java_multiple_files = true;
+option java_outer_classname = "Hostservice";
+
+message GetHostAttestationRequest {
+  bytes challenge = 1;
+}
+
+message GetHostAttestationResponse {
+  confidential_space.HostAttestation host_attestation = 1;
+}
+
+service HostService {
+  // Performs a simple self-test.
+  rpc SelfTest(SelfTestRequest) returns (SelfTestResponse) {}
+
+  // Obtains an attestation from the TPM.
+  rpc GetHostAttestation(GetHostAttestationRequest)
+      returns (GetHostAttestationResponse) {}
+}
+
+message SelfTestRequest {}
+
+message SelfTestResponse {
+  string response = 1;
+}

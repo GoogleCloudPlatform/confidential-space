@@ -27,4 +27,6 @@ protoc "${INCLUDES[@]}" \
   -I/usr/local/include \
   --go_out=. \
   --go_opt=module=github.com/GoogleCloudPlatform/confidential-space/server/proto \
+  --go-grpc_out=. \
+  --go-grpc_opt=module=github.com/GoogleCloudPlatform/confidential-space/server/proto \
   *.proto
