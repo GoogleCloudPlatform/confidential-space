@@ -249,4 +249,7 @@ message HostACOSState {
 
   // The TDX CPU PIID.
   bytes cpu_piid = 2;
+
+  // Number of warm resets since the last power cycle.
+  int64 warm_reset_count = 3;
 }
