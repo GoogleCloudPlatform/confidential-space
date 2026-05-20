@@ -17,6 +17,11 @@ message GoldenMeasurement {
 
   // Signature algorithm used to generate the signature
   common.SignatureAlgorithm signature_algorithm = 3;
+
+  // A string identifying the proto message type inside 'data',
+  // e.g.,
+  // "github.com/GoogleCloudPlatform/confidential-space/proto/gen/confidential_space_platform_rims"
+  string data_type = 4;
 }
 
 message PlatformRims {
