@@ -106,6 +106,15 @@ message VmAttestationQuote {
   }
 }
 
+message AcpiData {
+  // The ACPI RSDP table from /etc/acpi/rsdp.
+  bytes rsdp = 1;
+  // Dump of ACPI tables from /etc/acpi/tables.
+  bytes tables = 2;
+  // Dump of /etc/table-loader.
+  bytes table_loader = 3;
+}
+
 // Represents an attestation over a challenge provided by the workload.
 message VmAttestation {
   // Chosen by WSD.
@@ -122,6 +131,9 @@ message VmAttestation {
 
   // Runtime attestations for attached devices.
   repeated DeviceAttestationReport device_reports = 5;
+
+  // ACPI data provided by the platform.
+  optional AcpiData acpi_data = 6;
 }
 
 message KeyAttestation {
