@@ -24,6 +24,7 @@ add_include "github.com/google/go-sev-guest"
 add_include "github.com/google/go-tdx-guest"
 
 protoc "${INCLUDES[@]}" \
+  --experimental_allow_proto3_optional \
   -I/usr/local/include \
   --go_out=. \
   --go_opt=module=github.com/GoogleCloudPlatform/confidential-space/server/proto \
