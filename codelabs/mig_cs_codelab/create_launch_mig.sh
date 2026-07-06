@@ -4,14 +4,14 @@ source config_env.sh
 
 # Configuration Variables
 MACHINE_TYPE="n2d-standard-2" # SEV is supported on N2D
-SERVICE_ACCOUNT="${CURRENT_WORKLOAD_SERVICE_ACCOUNT}@${CURRENT_PROJECT_ID}.iam.gserviceaccount.com"
-CONTAINER_IMAGE="${CURRENT_PROJECT_REPOSITORY_REGION}-docker.pkg.dev/${CURRENT_PROJECT_ID}/${CURRENT_ARTIFACT_REPOSITORY}/${CURRENT_WORKLOAD_IMAGE_NAME}:${CURRENT_WORKLOAD_IMAGE_TAG}"
+SERVICE_ACCOUNT="${CURRENT_WORKLOAD_SERVICE_ACCOUNT:?Error: CURRENT_WORKLOAD_SERVICE_ACCOUNT is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}@${CURRENT_PROJECT_ID:?Error: CURRENT_PROJECT_ID is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}.iam.gserviceaccount.com"
+CONTAINER_IMAGE="${CURRENT_PROJECT_REPOSITORY_REGION:?Error: CURRENT_PROJECT_REPOSITORY_REGION is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}-docker.pkg.dev/${CURRENT_PROJECT_ID}/${CURRENT_ARTIFACT_REPOSITORY:?Error: CURRENT_ARTIFACT_REPOSITORY is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}/${CURRENT_WORKLOAD_IMAGE_NAME:?Error: CURRENT_WORKLOAD_IMAGE_NAME is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}:${CURRENT_WORKLOAD_IMAGE_TAG:?Error: CURRENT_WORKLOAD_IMAGE_TAG is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}"
 
 # 1. Create the Confidential Space Instance Template
 echo "Creating instance template '${TEMPLATE_NAME}'..."
 echo "Using service account '${SERVICE_ACCOUNT}' ..."
 
-gcloud compute instance-templates create "${TEMPLATE_NAME}" \
+gcloud compute instance-templates create "${TEMPLATE_NAME:?Error: TEMPLATE_NAME is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}" \
   --project="${CURRENT_PROJECT_ID}" \
   --machine-type="${MACHINE_TYPE}" \
   --confidential-compute-type=SEV \
@@ -25,10 +25,10 @@ gcloud compute instance-templates create "${TEMPLATE_NAME}" \
 
 # 2. Create the Managed Instance Group (MIG)
 echo "Creating Managed Instance Group '${CURRENT_MIG_NAME}'..."
-gcloud compute instance-groups managed create "${CURRENT_MIG_NAME}" \
+gcloud compute instance-groups managed create "${CURRENT_MIG_NAME:?Error: CURRENT_MIG_NAME is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}" \
     --size 3 \
     --template "${TEMPLATE_NAME}" \
-    --zone "${CURRENT_PROJECT_ZONE}"
+    --zone "${CURRENT_PROJECT_ZONE:?Error: CURRENT_PROJECT_ZONE is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}"
 
 # 3. Fetch Project Number
 echo "Fetching Project Number for ${CURRENT_PROJECT_ID}..."
@@ -57,7 +57,7 @@ echo "IAM policy artifact registry reader binding added."
 
 
 # Create Health Check that checks to see if port 22 is healthy
-gcloud compute health-checks create tcp ${HEALTH_CHECK_NAME} \
+gcloud compute health-checks create tcp "${HEALTH_CHECK_NAME:?Error: HEALTH_CHECK_NAME is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}" \
   --port 22 \
   --check-interval 30s \
   --healthy-threshold 1 \
@@ -67,7 +67,7 @@ gcloud compute health-checks create tcp ${HEALTH_CHECK_NAME} \
 
 # Create Firewall Rule to allow health checks to the MIG
 
-gcloud compute firewall-rules create ${ALLOW_HEALTH_CHECK_FIREWALL_RULE_NAME} \
+gcloud compute firewall-rules create "${ALLOW_HEALTH_CHECK_FIREWALL_RULE_NAME:?Error: ALLOW_HEALTH_CHECK_FIREWALL_RULE_NAME is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}" \
     --allow tcp:22 \
     --source-ranges 130.211.0.0/22,35.191.0.0/16 \
     --network default \

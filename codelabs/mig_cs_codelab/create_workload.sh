@@ -23,10 +23,10 @@ source common.sh
 
 
 
-PROJECT_ID=$CURRENT_PROJECT_ID
-REGION=$CURRENT_PROJECT_REPOSITORY_REGION
-REPOSITORY=$CURRENT_ARTIFACT_REPOSITORY
-IMAGE_NAME=$CURRENT_WORKLOAD_IMAGE_NAME
+PROJECT_ID=${CURRENT_PROJECT_ID:?Error: CURRENT_PROJECT_ID is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}
+REGION=${CURRENT_PROJECT_REPOSITORY_REGION:?Error: CURRENT_PROJECT_REPOSITORY_REGION is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}
+REPOSITORY=${CURRENT_ARTIFACT_REPOSITORY:?Error: CURRENT_ARTIFACT_REPOSITORY is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}
+IMAGE_NAME=${CURRENT_WORKLOAD_IMAGE_NAME:?Error: CURRENT_WORKLOAD_IMAGE_NAME is not set or empty. Please set it in config_env.sh and run 'source config_env.sh' first.}
 PARENT_DIR=$(dirname "$PWD")
 
 # Generate a timestamped tag (e.g., v-20251120-103000)
