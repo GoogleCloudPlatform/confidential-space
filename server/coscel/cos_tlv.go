@@ -48,6 +48,7 @@ const (
 	MemoryMonitorType
 	GpuCCModeType
 	GPUDeviceAttestationBindingType
+	ContainerSeparatorType
 )
 
 // COSTLV is a specific event type created for the COS (Google Container-Optimized OS),

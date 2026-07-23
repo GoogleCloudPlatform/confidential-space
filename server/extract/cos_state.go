@@ -52,12 +52,20 @@ func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, t
 // VerifiedCOSState returns the AttestedCosState from the given event log.
 func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.AttestedCosState, error) {
 	cosState := &pb.AttestedCosState{}
-	cosState.Container = &pb.ContainerState{}
+
+	// Initialize a default container (handles backward compatibility for old single-container logs)
+	defaultContainer := &pb.ContainerState{
+		Args:              make([]string, 0),
+		EnvVars:           make(map[string]string),
+		OverriddenEnvVars: make(map[string]string),
+	}
+
+	cosState.Containers = []*pb.ContainerState{defaultContainer}
+
+	currentContainer := defaultContainer
+
 	cosState.HealthMonitoring = &pb.HealthMonitoringState{}
 	cosState.GpuDeviceState = &pb.GpuDeviceState{}
-	cosState.Container.Args = make([]string, 0)
-	cosState.Container.EnvVars = make(map[string]string)
-	cosState.Container.OverriddenEnvVars = make(map[string]string)
 
 	seenSeparator := false
 	for _, record := range eventLog.Records() {
@@ -99,50 +107,61 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 		}
 
 		switch cosTlv.EventType {
+		case coscel.ContainerSeparatorType:
+			// If default container is already populated with an image (meaning we are on 2nd container)
+			// Or Create a new one every time we see this event
+			if currentContainer.GetImageReference() != "" || currentContainer.GetImageDigest() != "" {
+				currentContainer = &pb.ContainerState{
+					Args:              make([]string, 0),
+					EnvVars:           make(map[string]string),
+					OverriddenEnvVars: make(map[string]string),
+				}
+				cosState.Containers = append(cosState.Containers, currentContainer)
+			}
 		case coscel.ImageRefType:
-			if cosState.Container.GetImageReference() != "" {
+			if currentContainer.GetImageReference() != "" {
 				return nil, fmt.Errorf("found more than one ImageRef event")
 			}
-			cosState.Container.ImageReference = string(cosTlv.EventContent)
+			currentContainer.ImageReference = string(cosTlv.EventContent)
 
 		case coscel.ImageDigestType:
-			if cosState.Container.GetImageDigest() != "" {
+			if currentContainer.GetImageDigest() != "" {
 				return nil, fmt.Errorf("found more than one ImageDigest event")
 			}
-			cosState.Container.ImageDigest = string(cosTlv.EventContent)
+			currentContainer.ImageDigest = string(cosTlv.EventContent)
 
 		case coscel.RestartPolicyType:
 			restartPolicy, ok := pb.RestartPolicy_value[string(cosTlv.EventContent)]
 			if !ok {
 				return nil, fmt.Errorf("unknown restart policy in COS eventlog: %s", string(cosTlv.EventContent))
 			}
-			cosState.Container.RestartPolicy = pb.RestartPolicy(restartPolicy)
+			currentContainer.RestartPolicy = pb.RestartPolicy(restartPolicy)
 
 		case coscel.ImageIDType:
-			if cosState.Container.GetImageId() != "" {
+			if currentContainer.GetImageId() != "" {
 				return nil, fmt.Errorf("found more than one ImageId event")
 			}
-			cosState.Container.ImageId = string(cosTlv.EventContent)
+			currentContainer.ImageId = string(cosTlv.EventContent)
 
 		case coscel.EnvVarType:
 			envName, envVal, err := coscel.ParseEnvVar(string(cosTlv.EventContent))
 			if err != nil {
 				return nil, err
 			}
-			cosState.Container.EnvVars[envName] = envVal
+			currentContainer.EnvVars[envName] = envVal
 
 		case coscel.ArgType:
-			cosState.Container.Args = append(cosState.Container.Args, string(cosTlv.EventContent))
+			currentContainer.Args = append(currentContainer.Args, string(cosTlv.EventContent))
 
 		case coscel.OverrideArgType:
-			cosState.Container.OverriddenArgs = append(cosState.Container.OverriddenArgs, string(cosTlv.EventContent))
+			currentContainer.OverriddenArgs = append(currentContainer.OverriddenArgs, string(cosTlv.EventContent))
 
 		case coscel.OverrideEnvType:
 			envName, envVal, err := coscel.ParseEnvVar(string(cosTlv.EventContent))
 			if err != nil {
 				return nil, err
 			}
-			cosState.Container.OverriddenEnvVars[envName] = envVal
+			currentContainer.OverriddenEnvVars[envName] = envVal
 		case coscel.LaunchSeparatorType:
 			seenSeparator = true
 		case coscel.MemoryMonitorType:
