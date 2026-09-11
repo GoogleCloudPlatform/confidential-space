@@ -8,6 +8,23 @@ option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/pr
 option java_multiple_files = true;
 option java_outer_classname = "Hostservice";
 
+service HostService {
+  // Performs a simple self-test.
+  rpc SelfTest(SelfTestRequest) returns (SelfTestResponse) {}
+
+  // Obtains an attestation from the TPM.
+  rpc GetHostAttestation(GetHostAttestationRequest)
+      returns (GetHostAttestationResponse) {}
+
+  // RecordWorkloadEvent extends a single container workload claim into the
+  // host dTPM (PCR 19) and appends it to the host Canonical Event Log (CEL).
+  //
+  // This operation is not idempotent: retrying this request (e.g., in cases
+  // where status != OK) may result in duplicate records in the CEL.
+  rpc RecordWorkloadEvent(RecordWorkloadEventRequest)
+      returns (RecordWorkloadEventResponse);
+}
+
 message GetHostAttestationRequest {
   bytes challenge = 1;
 }
@@ -16,13 +33,13 @@ message GetHostAttestationResponse {
   confidential_space.HostAttestation host_attestation = 1;
 }
 
-service HostService {
-  // Performs a simple self-test.
-  rpc SelfTest(SelfTestRequest) returns (SelfTestResponse) {}
+message RecordWorkloadEventRequest {
+  // Binary-encoded cel.CosTlv record (Type 80 TLV).
+  bytes cos_event = 1;
+}
 
-  // Obtains an attestation from the TPM.
-  rpc GetHostAttestation(GetHostAttestationRequest)
-      returns (GetHostAttestationResponse) {}
+message RecordWorkloadEventResponse {
+  bool success = 1;
 }
 
 message SelfTestRequest {}
