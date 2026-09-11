@@ -22,6 +22,12 @@ type HostServiceClient interface {
 	SelfTest(ctx context.Context, in *SelfTestRequest, opts ...grpc.CallOption) (*SelfTestResponse, error)
 	// Obtains an attestation from the TPM.
 	GetHostAttestation(ctx context.Context, in *GetHostAttestationRequest, opts ...grpc.CallOption) (*GetHostAttestationResponse, error)
+	// RecordWorkloadEvent extends a single container workload claim into the
+	// host dTPM (PCR 19) and appends it to the host Canonical Event Log (CEL).
+	//
+	// This operation is not idempotent: retrying this request (e.g., in cases
+	// where status != OK) may result in duplicate records in the CEL.
+	RecordWorkloadEvent(ctx context.Context, in *RecordWorkloadEventRequest, opts ...grpc.CallOption) (*RecordWorkloadEventResponse, error)
 }
 
 type hostServiceClient struct {
@@ -50,6 +56,15 @@ func (c *hostServiceClient) GetHostAttestation(ctx context.Context, in *GetHostA
 	return out, nil
 }
 
+func (c *hostServiceClient) RecordWorkloadEvent(ctx context.Context, in *RecordWorkloadEventRequest, opts ...grpc.CallOption) (*RecordWorkloadEventResponse, error) {
+	out := new(RecordWorkloadEventResponse)
+	err := c.cc.Invoke(ctx, "/hostservice.HostService/RecordWorkloadEvent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HostServiceServer is the server API for HostService service.
 // All implementations must embed UnimplementedHostServiceServer
 // for forward compatibility
@@ -58,6 +73,12 @@ type HostServiceServer interface {
 	SelfTest(context.Context, *SelfTestRequest) (*SelfTestResponse, error)
 	// Obtains an attestation from the TPM.
 	GetHostAttestation(context.Context, *GetHostAttestationRequest) (*GetHostAttestationResponse, error)
+	// RecordWorkloadEvent extends a single container workload claim into the
+	// host dTPM (PCR 19) and appends it to the host Canonical Event Log (CEL).
+	//
+	// This operation is not idempotent: retrying this request (e.g., in cases
+	// where status != OK) may result in duplicate records in the CEL.
+	RecordWorkloadEvent(context.Context, *RecordWorkloadEventRequest) (*RecordWorkloadEventResponse, error)
 	mustEmbedUnimplementedHostServiceServer()
 }
 
@@ -70,6 +91,9 @@ func (UnimplementedHostServiceServer) SelfTest(context.Context, *SelfTestRequest
 }
 func (UnimplementedHostServiceServer) GetHostAttestation(context.Context, *GetHostAttestationRequest) (*GetHostAttestationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHostAttestation not implemented")
+}
+func (UnimplementedHostServiceServer) RecordWorkloadEvent(context.Context, *RecordWorkloadEventRequest) (*RecordWorkloadEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordWorkloadEvent not implemented")
 }
 func (UnimplementedHostServiceServer) mustEmbedUnimplementedHostServiceServer() {}
 
@@ -120,6 +144,24 @@ func _HostService_GetHostAttestation_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HostService_RecordWorkloadEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordWorkloadEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServiceServer).RecordWorkloadEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/hostservice.HostService/RecordWorkloadEvent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServiceServer).RecordWorkloadEvent(ctx, req.(*RecordWorkloadEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HostService_ServiceDesc is the grpc.ServiceDesc for HostService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +176,10 @@ var HostService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetHostAttestation",
 			Handler:    _HostService_GetHostAttestation_Handler,
+		},
+		{
+			MethodName: "RecordWorkloadEvent",
+			Handler:    _HostService_RecordWorkloadEvent_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
