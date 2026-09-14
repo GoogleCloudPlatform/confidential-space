@@ -2,76 +2,13 @@ syntax = "proto3";
 
 package confidential_space;
 
+import public "gpu_attestation.proto";
+
 import "proto/state.proto";
 
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation";
 option java_multiple_files = true;
 option java_outer_classname = "Attestation";
-
-// Enumerates the supported GPU architecture types.
-enum GpuArchitectureType {
-  // Unspecified GPU architecture type.
-  GPU_ARCHITECTURE_TYPE_UNSPECIFIED = 0;
-  // Reserved for other GPU architecture types to support future use cases.
-  reserved 1, 2, 3, 4, 5, 6, 7;
-  // Hopper GPU architecture type.
-  GPU_ARCHITECTURE_TYPE_HOPPER = 8;
-  // Blackwell GPU architecture type.
-  GPU_ARCHITECTURE_TYPE_BLACKWELL = 10;
-}
-
-message GpuInfo {
-  // The unique identifier of the GPU.
-  string uuid = 1;
-
-  // Driver version obtained from the GPU's attestation report.
-  string driver_version = 2;
-
-  // VBIOS version obtained from the GPU's attestation report.
-  string vbios_version = 3;
-
-  // The architecture type of the GPU.
-  GpuArchitectureType gpu_architecture_type = 4;
-
-  // The verified attestation certificate chain for the GPU device.
-  bytes attestation_certificate_chain = 5;
-
-  // This field contains SPDM request/response defined in
-  // https://www.dmtf.org/sites/default/files/standards/documents/DSP0274_1.1.0.pdf
-  bytes attestation_report = 6;
-}
-
-// An Nvidia attestation report for GPU and NVSwitch devices.
-// Contains necessary attestation evidence that the client collects for
-// verification.
-message NvidiaAttestationReport {
-  // Single GPU Passthrough (SPT) attestation.
-  message SinglePassthroughAttestation {
-    // Single GPU quote.
-    GpuInfo gpu_quote = 1;
-  }
-
-  // MultiGpuSecurePassthroughAttestation contains the attestation evidence
-  // for a Multi-GPU Secure Passthrough (MPT) attestation.
-  message MultiGpuSecurePassthroughAttestation {
-    // A list of GPU quotes.
-    repeated GpuInfo gpu_quotes = 1;
-  }
-
-  // The Confidential Computing feature that the attestation is for.
-  oneof cc_feature {
-    // Single GPU Passthrough (SPT) attestation.
-    SinglePassthroughAttestation spt = 1;
-
-    // Multi-GPU Secure Passthrough (MPT) attestation.
-    MultiGpuSecurePassthroughAttestation mpt = 3;  // MPT attestation.
-  }
-
-  // The nonce used for GPU attestation.
-  bytes nonce = 4;
-
-  reserved 2;
-}
 
 message DeviceAttestationReport {
   oneof report {
