@@ -23,6 +23,9 @@ add_include "github.com/google/go-eventlog"
 add_include "github.com/google/go-sev-guest"
 add_include "github.com/google/go-tdx-guest"
 
+# Remove stale generated Go files before regenerating.
+rm -rf gen
+
 protoc "${INCLUDES[@]}" \
   --experimental_allow_proto3_optional \
   -I/usr/local/include \
