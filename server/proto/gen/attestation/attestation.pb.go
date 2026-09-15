@@ -7,6 +7,7 @@
 package attestation
 
 import (
+	gpuattestation "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/gpuattestation"
 	state "github.com/google/go-eventlog/proto/state"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -20,6 +21,24 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// Symbols defined in public import of gpu_attestation.proto.
+
+type GpuArchitectureType = gpuattestation.GpuArchitectureType
+
+const GpuArchitectureType_GPU_ARCHITECTURE_TYPE_UNSPECIFIED = gpuattestation.GpuArchitectureType_GPU_ARCHITECTURE_TYPE_UNSPECIFIED
+const GpuArchitectureType_GPU_ARCHITECTURE_TYPE_HOPPER = gpuattestation.GpuArchitectureType_GPU_ARCHITECTURE_TYPE_HOPPER
+const GpuArchitectureType_GPU_ARCHITECTURE_TYPE_BLACKWELL = gpuattestation.GpuArchitectureType_GPU_ARCHITECTURE_TYPE_BLACKWELL
+
+var GpuArchitectureType_name = gpuattestation.GpuArchitectureType_name
+var GpuArchitectureType_value = gpuattestation.GpuArchitectureType_value
+
+type GpuInfo = gpuattestation.GpuInfo
+type NvidiaAttestationReport = gpuattestation.NvidiaAttestationReport
+type NvidiaAttestationReport_Spt = gpuattestation.NvidiaAttestationReport_Spt
+type NvidiaAttestationReport_Mpt = gpuattestation.NvidiaAttestationReport_Mpt
+type NvidiaAttestationReport_SinglePassthroughAttestation = gpuattestation.NvidiaAttestationReport_SinglePassthroughAttestation
+type NvidiaAttestationReport_MultiGpuSecurePassthroughAttestation = gpuattestation.NvidiaAttestationReport_MultiGpuSecurePassthroughAttestation
 
 type DeviceAttestationReport struct {
 	state         protoimpl.MessageState
@@ -71,7 +90,7 @@ func (m *DeviceAttestationReport) GetReport() isDeviceAttestationReport_Report {
 	return nil
 }
 
-func (x *DeviceAttestationReport) GetNvidiaReport() *NvidiaAttestationReport {
+func (x *DeviceAttestationReport) GetNvidiaReport() *gpuattestation.NvidiaAttestationReport {
 	if x, ok := x.GetReport().(*DeviceAttestationReport_NvidiaReport); ok {
 		return x.NvidiaReport
 	}
@@ -84,7 +103,7 @@ type isDeviceAttestationReport_Report interface {
 
 type DeviceAttestationReport_NvidiaReport struct {
 	// An Nvidia attestation report for GPU and NVSwitch devices.
-	NvidiaReport *NvidiaAttestationReport `protobuf:"bytes,1,opt,name=nvidia_report,json=nvidiaReport,proto3,oneof"`
+	NvidiaReport *gpuattestation.NvidiaAttestationReport `protobuf:"bytes,1,opt,name=nvidia_report,json=nvidiaReport,proto3,oneof"`
 }
 
 func (*DeviceAttestationReport_NvidiaReport) isDeviceAttestationReport_Report() {}
@@ -1429,7 +1448,7 @@ var file_attestation_proto_goTypes = []interface{}{
 	(*TpmQuote_SignedQuote)(nil),                        // 15: confidential_space.TpmQuote.SignedQuote
 	nil,                                                 // 16: confidential_space.TpmQuote.SignedQuote.PcrValuesEntry
 	(*TpmAuxiliaryAttestation_SignedNvCertify)(nil),     // 17: confidential_space.TpmAuxiliaryAttestation.SignedNvCertify
-	(*NvidiaAttestationReport)(nil),                     // 18: confidential_space.NvidiaAttestationReport
+	(*gpuattestation.NvidiaAttestationReport)(nil),      // 18: confidential_space.NvidiaAttestationReport
 	(*state.GMESState)(nil),                             // 19: state.GMESState
 }
 var file_attestation_proto_depIdxs = []int32{
@@ -1464,7 +1483,6 @@ func file_attestation_proto_init() {
 	if File_attestation_proto != nil {
 		return
 	}
-	file_gpu_attestation_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_attestation_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeviceAttestationReport); i {
