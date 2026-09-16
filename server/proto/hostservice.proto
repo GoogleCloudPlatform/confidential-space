@@ -38,9 +38,7 @@ message RecordWorkloadEventRequest {
   bytes cos_event = 1;
 }
 
-message RecordWorkloadEventResponse {
-  bool success = 1;
-}
+message RecordWorkloadEventResponse {}
 
 message SelfTestRequest {}
 

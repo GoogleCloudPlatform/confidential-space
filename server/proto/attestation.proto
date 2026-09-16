@@ -5,6 +5,7 @@ package confidential_space;
 import public "gpu_attestation.proto";
 
 import "proto/state.proto";
+import "proto/attest.proto";
 
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation";
 option java_multiple_files = true;
@@ -201,4 +202,7 @@ message HostACOSState {
 
   // Number of warm resets since the last power cycle.
   int64 warm_reset_count = 3;
+
+  // The workload container state measured into PCR 19.
+  optional attest.ContainerState container_state = 4;
 }
