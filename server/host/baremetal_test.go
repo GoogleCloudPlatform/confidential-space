@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	csextract "google3/third_party/confidential_space/server/extract/extract"
 	hostcel "github.com/GoogleCloudPlatform/confidential-space/server/host/coscel"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-eventlog/cel"
@@ -18,6 +19,7 @@ import (
 	"github.com/google/go-tpm/tpm2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google3/third_party/platform_attestation/titan/dice/titancertutil/titancertutil"
 	"github.com/google/platform-attestation/titan/dice/titandice"
 
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
@@ -54,6 +56,9 @@ var (
 
 	//go:embed testdata/titan_quote_prod.bin
 	titanQuoteDataProd []byte
+
+	//go:embed testdata/titan_quote_dual_rot_prod.bin
+	titanQuoteDualRoTDataProd []byte
 
 	rwSigningKeyInfoProd = titandice.KeyInfo{0x47, 0x22, 0x4d, 0xc6}
 )
@@ -570,5 +575,119 @@ func testEventLog(t *testing.T, events []tcg.Event) ([]byte, *tpmpb.PCRs) {
 	return rawLog, &tpmpb.PCRs{
 		Hash: tpmpb.HashAlgo_SHA256,
 		Pcrs: pcrMap,
+	}
+}
+
+// testDualRoTHostAttestation is a Dual RoT HostAttestation object from a real machine.
+func testDualRoTHostAttestation(t *testing.T) *attestpb.HostAttestation {
+	t.Helper()
+	h := &attestpb.HostAttestation{}
+	if err := proto.Unmarshal(titanQuoteDualRoTDataProd, h); err != nil {
+		t.Fatalf("failed to unmarshal Dual RoT host attestation: %v", err)
+	}
+
+	return h
+}
+
+func TestExtractWorkloadCOSState(t *testing.T) {
+	t.Run("dual RoT host attestation", func(t *testing.T) {
+		attestation := testDualRoTHostAttestation(t)
+		titanOpts, err := titancertutil.GetValidateScribeCertificateChainOptions()
+		if err != nil {
+			t.Fatalf("failed to get Titan validation options: %v", err)
+		}
+
+		opts := &VerifyOpts{
+			HashAlgo:            tpm2.TPMAlgSHA256,
+			TitanValidationOpts: titanOpts,
+			Nonce:               attestation.GetChallenge(),
+		}
+
+		acosState, err := VerifyAttestation(attestation, opts)
+		if err != nil {
+			t.Fatalf("VerifyAttestation failed: %v", err)
+		}
+		if acosState.GetWarmResetCount() != 2 {
+			t.Errorf("got WarmResetCount %d, want 2", acosState.GetWarmResetCount())
+		}
+		if len(acosState.GetCpuPiid()) != cpuPIIDSize {
+			t.Errorf("got CpuPiid length %d, want %d", len(acosState.GetCpuPiid()), cpuPIIDSize)
+		}
+
+		cosState, err := ExtractWorkloadCOSState(attestation, opts.HashAlgo, csextract.Options{PopulateGpuDeviceState: true})
+		if err != nil {
+			t.Fatalf("ExtractWorkloadCOSState failed: %v", err)
+		}
+		if cosState == nil {
+			t.Fatal("ExtractWorkloadCOSState returned nil, want non-nil AttestedCosState")
+		}
+		if got, want := cosState.GetContainer().GetImageReference(), "docker.io/library/nginx:latest"; got != want {
+			t.Errorf("got ImageReference %q, want %q", got, want)
+		}
+		if cosState.GetGpuDeviceState().GetNvidiaAttestationReport() == nil {
+			t.Error("got nil NvidiaAttestationReport, want populated")
+		}
+	})
+
+	t.Run("legacy host attestation without workload claims", func(t *testing.T) {
+		attestation := testHostAttestation(t)
+		attestation.TpmQuote.CelLaunchEventLog = celLaunchEventLogData
+		attestation.TpmQuote.Quotes[0].PcrValues[uint32(hostcel.UserspacePCRIdx)] = celLaunchPCRBanks[0].Pcrs[hostcel.UserspacePCRIdx]
+
+		cosState, err := ExtractWorkloadCOSState(attestation, tpm2.TPMAlgSHA256, csextract.Options{})
+		if err != nil {
+			t.Fatalf("ExtractWorkloadCOSState failed: %v", err)
+		}
+		if cosState != nil {
+			t.Errorf("got %v, want nil", cosState)
+		}
+	})
+}
+
+func TestExtractWorkloadCOSStateErrors(t *testing.T) {
+	testcases := []struct {
+		name        string
+		attestation func(*testing.T) *attestpb.HostAttestation
+		wantError   string
+	}{
+		{
+			name: "truncated workload claims fails PCR replay",
+			attestation: func(t *testing.T) *attestpb.HostAttestation {
+				att := testDualRoTHostAttestation(t)
+				// Replace event log with only Phase 1 host events while PCR 19 still reflects workload claims.
+				att.TpmQuote.CelLaunchEventLog = celLaunchEventLogData
+				return att
+			},
+			wantError: "CEL replay failed",
+		},
+		{
+			name: "empty CEL launch event log",
+			attestation: func(t *testing.T) *attestpb.HostAttestation {
+				att := testDualRoTHostAttestation(t)
+				att.TpmQuote.CelLaunchEventLog = nil
+				return att
+			},
+			wantError: "CEL launch event log is empty",
+		},
+		{
+			name: "missing matching quote hash algorithm",
+			attestation: func(t *testing.T) *attestpb.HostAttestation {
+				att := testDualRoTHostAttestation(t)
+				att.TpmQuote.Quotes = nil
+				return att
+			},
+			wantError: "no quote found with matching hash algorithm",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ExtractWorkloadCOSState(tc.attestation(t), tpm2.TPMAlgSHA256, csextract.Options{})
+			if err == nil {
+				t.Errorf("ExtractWorkloadCOSState() succeeded, want error")
+			} else if !strings.Contains(err.Error(), tc.wantError) {
+				t.Errorf("ExtractWorkloadCOSState() got error %v, want error %v", err, tc.wantError)
+			}
+		})
 	}
 }
