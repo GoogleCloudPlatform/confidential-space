@@ -16,8 +16,10 @@ import (
 	"github.com/google/platform-attestation/titan/dice/titandice"
 	"github.com/google/platform-attestation/titan/measurements"
 
+	csextract "google3/third_party/confidential_space/server/extract/extract"
 	hostcel "github.com/GoogleCloudPlatform/confidential-space/server/host/coscel"
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
+	tpmattestpb "github.com/google/go-tpm-tools/proto/attest"
 	tpmpb "github.com/google/go-tpm-tools/proto/tpm"
 	tpmquote "github.com/google/go-tpm-tools/quote"
 )
@@ -92,6 +94,39 @@ func VerifyAttestation(attestation *attestpb.HostAttestation, opts *VerifyOpts) 
 	return gmesState, nil
 }
 
+// ExtractWorkloadCOSState replays the host CEL launch event log against PCR 19 and
+// extracts the Dual RoT guest workload COS state. Returns (nil, nil) if the host
+// attestation only contains host events.
+//
+// Callers should first verify the host attestation signature and quote via VerifyAttestation.
+func ExtractWorkloadCOSState(attestation *attestpb.HostAttestation, hashAlgo tpm2.TPMAlgID, opts csextract.Options) (*tpmattestpb.AttestedCosState, error) {
+	var quote *attestpb.TpmQuote_SignedQuote
+	for _, q := range attestation.GetTpmQuote().GetQuotes() {
+		if q.GetHashAlgorithm() == uint32(hashAlgo) {
+			quote = q
+			break
+		}
+	}
+	if quote == nil {
+		return nil, fmt.Errorf("no quote found with matching hash algorithm: %v", hashAlgo)
+	}
+
+	rawEventLog := attestation.GetTpmQuote().GetCelLaunchEventLog()
+	if len(rawEventLog) == 0 {
+		// Even without workload claims, a valid host attestation always measures at least
+		// the CPUPIID and host LaunchSeparator events into PCR 19.
+		return nil, fmt.Errorf("CEL launch event log is empty")
+	}
+
+	pcrBank, err := createPCRBank(quote)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PCR bank: %v", err)
+	}
+
+	opts.HostPCR = true
+	return csextract.ParseCOSCEL(rawEventLog, pcrBank, opts)
+}
+
 func createPCRBank(pcrs *attestpb.TpmQuote_SignedQuote) (register.PCRBank, error) {
 	tcgHash := state.HashAlgo(pcrs.GetHashAlgorithm())
 	cryptoHashAlg, err := tcgHash.CryptoHash()
@@ -132,6 +167,16 @@ func parseCPUPIID(rawEventLog []byte, register register.PCRBank) ([]byte, error)
 			return nil, fmt.Errorf("unexpected CEL record index: %d", record.Index)
 		}
 
+		// After the host LaunchSeparator, Dual RoT attestations append guest workload COS
+		// records (Type 80, verified by ExtractWorkloadCOSState). Ignore non-host records
+		// here, but reject any additional host COS events (Type 82) after the separator.
+		if seenSeparator {
+			if hostcel.IsCOSTLV(record.Content) {
+				return nil, fmt.Errorf("found additional COS events after separator at position %d", i)
+			}
+			continue
+		}
+
 		cosTLV, err := hostcel.ParseToCOSTLV(record.Content)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse COS TLV: %v", err)
@@ -139,10 +184,6 @@ func parseCPUPIID(rawEventLog []byte, register register.PCRBank) ([]byte, error)
 
 		if err := cel.VerifyDigests(cosTLV, record.Digests); err != nil {
 			return nil, fmt.Errorf("failed to verify digests: %v", err)
-		}
-
-		if seenSeparator {
-			return nil, fmt.Errorf("found additional COS events after separator at position %d", i)
 		}
 
 		switch cosTLV.EventType {
