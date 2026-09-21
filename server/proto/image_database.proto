@@ -39,6 +39,7 @@ message ImageDatabase {
     COS_DB_V10 = 2;
     COS_DB_V20250203 = 3;
     COS_DB_V20251004 = 4;
+    COS_DB_V20260706 = 5;
   }
 
   message CCDatabase {

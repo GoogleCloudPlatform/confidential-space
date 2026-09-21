@@ -60,3 +60,11 @@ var cosDBv20251004CertPEM []byte
 
 // COSDBv20251004Cert is the raw byte representation of the Container-optimized OS DB cert.
 var COSDBv20251004Cert = parseCertificatePEM(cosDBv20251004CertPEM)
+
+// cosDBv20260706CertPEM is the cert for the COS Secure Boot signing key.
+//
+//go:embed cos_db_v20260706.pem
+var cosDBv20260706CertPEM []byte
+
+// COSDBv20260706Cert is the raw byte representation of the Container-optimized OS DB cert.
+var COSDBv20260706Cert = parseCertificatePEM(cosDBv20260706CertPEM)

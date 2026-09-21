@@ -43,6 +43,11 @@ func TestKnownCertificate(t *testing.T) {
 			want:      data.COSDBv20251004Cert,
 		},
 		{
+			name:      "Known certificate COS_DB_V20260706",
+			certProto: rimpb.ImageDatabase_COS_DB_V20260706,
+			want:      data.COSDBv20260706Cert,
+		},
+		{
 			name:      "Unknown certificate",
 			certProto: rimpb.ImageDatabase_UNSPECIFIED_CERT,
 			want:      nil,

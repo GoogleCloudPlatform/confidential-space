@@ -111,6 +111,8 @@ func KnownCertificate(known rimpb.ImageDatabase_CCKnownCertificates) *x509.Certi
 		return data.COSDBv20250203Cert
 	case rimpb.ImageDatabase_COS_DB_V20251004:
 		return data.COSDBv20251004Cert
+	case rimpb.ImageDatabase_COS_DB_V20260706:
+		return data.COSDBv20260706Cert
 	}
 	return nil
 }
