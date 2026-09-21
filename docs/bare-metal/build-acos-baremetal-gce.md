@@ -1,5 +1,8 @@
 # User guide: Build confidential aCOS images from source and run on bare metal in GCE
 
+**Authors:** [Dwight Worley](https://github.com/dwightworley), [Jiankun Lu](https://github.com/jkl73), [Robert Kolchmeyer](https://github.com/rkolchmeyer)
+**Contributors:** [Steve Rutherford](https://github.com/stevenrutherford), [Keith Moyer](https://github.com/keithmoyer)
+
 ## 1. Overview
 
 This guide provides instructions for building a custom OS image and deploying it
