@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-tpm/tpm2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google3/third_party/platform_attestation/titan/dice/titancertutil/titancertutil"
 	"github.com/google/platform-attestation/titan/dice/titandice"
 
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
@@ -54,6 +55,9 @@ var (
 
 	//go:embed testdata/titan_quote_prod.bin
 	titanQuoteDataProd []byte
+
+	//go:embed testdata/titan_quote_dual_rot_prod.bin
+	titanQuoteDualRoTDataProd []byte
 
 	rwSigningKeyInfoProd = titandice.KeyInfo{0x47, 0x22, 0x4d, 0xc6}
 )
@@ -119,9 +123,12 @@ func TestVerifyEventLogs(t *testing.T) {
 		Gmes: gmesExpectedState,
 	}
 
-	state, err := verifyEventLogs(tpmQuote, convertToPCRBank(t, gmesPCRBanks[0]))
+	state, cosState, err := verifyEventLogs(tpmQuote, convertToPCRBank(t, gmesPCRBanks[0]))
 	if err != nil {
 		t.Fatalf("verifyEventLogs failed: %v", err)
+	}
+	if cosState != nil {
+		t.Errorf("got cosState %+v, want nil", cosState)
 	}
 
 	if !cmp.Equal(state, expectedState, protocmp.Transform()) {
@@ -162,9 +169,12 @@ func TestVerifyEventLogsWithCEL(t *testing.T) {
 		CpuPiid: celExpectedPIID,
 	}
 
-	state, err := verifyEventLogs(tpmQuote, convertToPCRBank(t, pcrs))
+	state, cosState, err := verifyEventLogs(tpmQuote, convertToPCRBank(t, pcrs))
 	if err != nil {
 		t.Fatalf("verifyEventLogs failed: %v", err)
+	}
+	if cosState != nil {
+		t.Errorf("got cosState %+v, want nil", cosState)
 	}
 
 	if !cmp.Equal(state, expectedState, protocmp.Transform()) {
@@ -190,11 +200,14 @@ func testTPMQuote(tpmEventLog []byte, launcherEventLog []byte, pcrBanks []*tpmpb
 	}
 }
 
-func TestParseCPUPIID(t *testing.T) {
+func TestParseCEL(t *testing.T) {
 	pcrBank := convertToPCRBank(t, celLaunchPCRBanks[0])
-	piid, err := parseCPUPIID(celLaunchEventLogData, pcrBank)
+	piid, cosState, err := parseCEL(celLaunchEventLogData, pcrBank)
 	if err != nil {
 		t.Fatalf("Failed to parse PIID event: %v", err)
+	}
+	if cosState != nil {
+		t.Errorf("got cosState %+v, want nil", cosState)
 	}
 
 	if !bytes.Equal(piid, celExpectedPIID) {
@@ -202,7 +215,7 @@ func TestParseCPUPIID(t *testing.T) {
 	}
 }
 
-func TestParseCPUPIIDErrors(t *testing.T) {
+func TestParseCELErrors(t *testing.T) {
 	testPIID := bytes.Repeat([]byte{0x42}, 16)
 
 	testcases := []struct {
@@ -231,7 +244,7 @@ func TestParseCPUPIIDErrors(t *testing.T) {
 
 				return testCEL, pcrValue
 			},
-			wantError: "found additional COS events after separator",
+			wantError: "found additional host COS events after separator",
 		},
 		{
 			name: "duplicate PIID",
@@ -269,11 +282,11 @@ func TestParseCPUPIIDErrors(t *testing.T) {
 				},
 			})
 
-			_, err := parseCPUPIID(testCEL, pcrBank)
+			_, _, err := parseCEL(testCEL, pcrBank)
 			if err == nil {
-				t.Errorf("parseCPUPIID() succeeded, want error")
+				t.Errorf("parseCEL() succeeded, want error")
 			} else if !strings.Contains(err.Error(), tc.wantError) {
-				t.Errorf("parseCPUPIID() got error %v, want error %v", err, tc.wantError)
+				t.Errorf("parseCEL() got error %v, want error %v", err, tc.wantError)
 			}
 		})
 	}
@@ -570,5 +583,107 @@ func testEventLog(t *testing.T, events []tcg.Event) ([]byte, *tpmpb.PCRs) {
 	return rawLog, &tpmpb.PCRs{
 		Hash: tpmpb.HashAlgo_SHA256,
 		Pcrs: pcrMap,
+	}
+}
+
+// testDualRoTHostAttestation is a Dual RoT HostAttestation object from a real machine.
+func testDualRoTHostAttestation(t *testing.T) *attestpb.HostAttestation {
+	t.Helper()
+	h := &attestpb.HostAttestation{}
+	if err := proto.Unmarshal(titanQuoteDualRoTDataProd, h); err != nil {
+		t.Fatalf("failed to unmarshal Dual RoT host attestation: %v", err)
+	}
+
+	return h
+}
+
+func TestVerifyAttestationWithWorkloadClaims(t *testing.T) {
+	titanOpts, err := titancertutil.GetValidateScribeCertificateChainOptions()
+	if err != nil {
+		t.Fatalf("failed to get Titan validation options: %v", err)
+	}
+
+	t.Run("dual RoT host attestation", func(t *testing.T) {
+		attestation := testDualRoTHostAttestation(t)
+		opts := &VerifyOpts{
+			HashAlgo:            tpm2.TPMAlgSHA256,
+			TitanValidationOpts: titanOpts,
+			Nonce:               attestation.GetChallenge(),
+		}
+
+		acosState, cosState, err := VerifyAttestationWithWorkloadClaims(attestation, opts)
+		if err != nil {
+			t.Fatalf("VerifyAttestationWithWorkloadClaims failed: %v", err)
+		}
+		if acosState.GetWarmResetCount() != 2 {
+			t.Errorf("got WarmResetCount %d, want 2", acosState.GetWarmResetCount())
+		}
+		if len(acosState.GetCpuPiid()) != cpuPIIDSize {
+			t.Errorf("got CpuPiid length %d, want %d", len(acosState.GetCpuPiid()), cpuPIIDSize)
+		}
+		if cosState == nil {
+			t.Fatal("VerifyAttestationWithWorkloadClaims returned nil cosState, want non-nil AttestedCosState")
+		}
+		if got, want := cosState.GetContainer().GetImageReference(), "docker.io/library/nginx:latest"; got != want {
+			t.Errorf("got ImageReference %q, want %q", got, want)
+		}
+		if cosState.GetGpuDeviceState().GetNvidiaAttestationReport() == nil {
+			t.Error("got nil NvidiaAttestationReport, want populated")
+		}
+
+		// VerifyAttestation should reject attestations that contain workload claims.
+		if _, err := VerifyAttestation(attestation, opts); err == nil || !strings.Contains(err.Error(), "workload claims are present") {
+			t.Errorf("VerifyAttestation() got err %v, want error containing 'workload claims are present'", err)
+		}
+	})
+}
+
+func TestVerifyAttestationWithWorkloadClaimsErrors(t *testing.T) {
+	titanOpts, err := titancertutil.GetValidateScribeCertificateChainOptions()
+	if err != nil {
+		t.Fatalf("failed to get Titan validation options: %v", err)
+	}
+
+	testcases := []struct {
+		name        string
+		attestation func(*testing.T) *attestpb.HostAttestation
+		wantError   string
+	}{
+		{
+			name: "truncated workload claims fails PCR replay",
+			attestation: func(t *testing.T) *attestpb.HostAttestation {
+				att := testDualRoTHostAttestation(t)
+				// Replace event log with only Phase 1 host events while PCR 19 still reflects workload claims.
+				att.TpmQuote.CelLaunchEventLog = celLaunchEventLogData
+				return att
+			},
+			wantError: "failed to replay CEL",
+		},
+		{
+			name: "missing matching quote hash algorithm",
+			attestation: func(t *testing.T) *attestpb.HostAttestation {
+				att := testDualRoTHostAttestation(t)
+				att.TpmQuote.Quotes = nil
+				return att
+			},
+			wantError: "no quote found with matching hash algorithm",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			att := tc.attestation(t)
+			opts := &VerifyOpts{
+				HashAlgo:            tpm2.TPMAlgSHA256,
+				TitanValidationOpts: titanOpts,
+				Nonce:               att.GetChallenge(),
+			}
+			_, _, err := VerifyAttestationWithWorkloadClaims(att, opts)
+			if err == nil {
+				t.Errorf("VerifyAttestationWithWorkloadClaims() succeeded, want error")
+			} else if !strings.Contains(err.Error(), tc.wantError) {
+				t.Errorf("VerifyAttestationWithWorkloadClaims() got error %v, want error %v", err, tc.wantError)
+			}
+		})
 	}
 }

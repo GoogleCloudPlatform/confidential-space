@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/coscel"
+	hostcel "github.com/GoogleCloudPlatform/confidential-space/server/host/coscel"
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
 	"github.com/google/go-eventlog/cel"
 	"github.com/google/go-eventlog/register"
@@ -15,7 +16,10 @@ import (
 
 // Options contains the options for parsing the COS event log.
 type Options struct {
-	PopulateGpuDeviceState bool // Whether to populate the GPU device state default is false.
+	// PopulateGpuDeviceState controls whether to populate the GPU device state (default false).
+	PopulateGpuDeviceState bool
+	// HostPCR indicates that the event log is from a bare-metal host, rather than a VM.
+	HostPCR bool
 }
 
 // ParseCOSCEL takes an encoded Attested COS CEL and MR bank, replays the CEL against the MRs,
@@ -60,6 +64,7 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 	cosState.Container.OverriddenEnvVars = make(map[string]string)
 
 	seenSeparator := false
+	seenCOSRecord := false
 	for _, record := range eventLog.Records() {
 		if uint8(record.IndexType) != registerType {
 			return nil, fmt.Errorf("expect registerType: %d, but get %d in a CEL record", registerType, record.IndexType)
@@ -67,7 +72,11 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 
 		switch record.IndexType {
 		case cel.PCRType:
-			if record.Index != coscel.EventPCRIndex {
+			expectedPCR := uint8(coscel.EventPCRIndex)
+			if opts.HostPCR {
+				expectedPCR = hostcel.UserspacePCRIdx
+			}
+			if record.Index != expectedPCR {
 				return nil, fmt.Errorf("found unexpected PCR %d in COS CEL log", record.Index)
 			}
 		case cel.CCMRType:
@@ -76,6 +85,16 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 			}
 		default:
 			return nil, fmt.Errorf("unknown COS CEL log index type %d", record.IndexType)
+		}
+
+		// In a host event log, there are host-specific events followed by guest workload
+		// COS events. Skip leading host events, but reject any host events that
+		// appear after workload COS events.
+		if opts.HostPCR && hostcel.IsCOSTLV(record.Content) {
+			if seenCOSRecord {
+				return nil, fmt.Errorf("found host event type %d after workload COS events started in PCR %d", record.Content.Type, record.Index)
+			}
+			continue
 		}
 
 		// The Content.Type is not verified at this point, so we have to fail
@@ -87,6 +106,7 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 		if err != nil {
 			return nil, err
 		}
+		seenCOSRecord = true
 
 		// verify digests for the cos cel content
 		if err := cel.VerifyDigests(cosTlv, record.Digests); err != nil {
@@ -173,6 +193,10 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 			return nil, fmt.Errorf("found unknown COS Event Type %v", cosTlv.EventType)
 		}
 
+	}
+	// Return nil, nil if there are no workload COS records in the event log.
+	if opts.HostPCR && !seenCOSRecord {
+		return nil, nil
 	}
 	return cosState, nil
 }
