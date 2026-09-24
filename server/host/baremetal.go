@@ -16,7 +16,7 @@ import (
 	"github.com/google/platform-attestation/titan/dice/titandice"
 	"github.com/google/platform-attestation/titan/measurements"
 
-	csextract "google3/third_party/confidential_space/server/extract/extract"
+	csextract "github.com/GoogleCloudPlatform/confidential-space/server/extract"
 	hostcel "github.com/GoogleCloudPlatform/confidential-space/server/host/coscel"
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
 	tpmattestpb "github.com/google/go-tpm-tools/proto/attest"

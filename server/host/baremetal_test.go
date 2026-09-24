@@ -18,7 +18,7 @@ import (
 	"github.com/google/go-tpm/tpm2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
-	"google3/third_party/platform_attestation/titan/dice/titancertutil/titancertutil"
+	"github.com/google/platform-attestation/titan/dice/titancertutil"
 	"github.com/google/platform-attestation/titan/dice/titandice"
 
 	attestpb "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/attestation"
