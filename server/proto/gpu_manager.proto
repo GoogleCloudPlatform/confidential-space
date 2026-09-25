@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package gpumanager;
+
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/gpumanager";
+option java_multiple_files = true;
+option java_outer_classname = "GpuManager";
+
+// GpuManagerService is served by the gpu-manager sidecar over a Unix domain
+// socket on the host. The launcher uses it to decide whether the GPUs are
+// ready before it starts the workload.
+service GpuManagerService {
+  // Returns the current health state of the GPU manager.
+  rpc GetHealthz(GetHealthzRequest) returns (GetHealthzResponse) {}
+}
+
+// HealthState is the state of the GPU manager.
+enum HealthState {
+  // Default value. Never set by the server.
+  HEALTH_STATE_UNSPECIFIED = 0;
+  // GPU setup is still in progress. Callers should keep polling.
+  HEALTH_STATE_PENDING = 1;
+  // GPU setup completed successfully.
+  HEALTH_STATE_READY = 2;
+  // GPU setup failed. The workload may still be started.
+  HEALTH_STATE_FAILED = 3;
+  // BMSAI setup failed. The workload must not be started.
+  HEALTH_STATE_BMSAI_FAILED = 4;
+}
+
+message GetHealthzRequest {}
+
+message GetHealthzResponse {
+  // The current health state.
+  HealthState health_state = 1;
+
+  // Human readable details when health_state is HEALTH_STATE_FAILED or
+  // HEALTH_STATE_BMSAI_FAILED. Empty otherwise.
+  string error_message = 2;
+}
