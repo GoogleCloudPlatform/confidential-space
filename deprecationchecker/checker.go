@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"google3/third_party/golang/cloud_google_com/go/compute/metadata/v/v0/metadata"
+	"cloud.google.com/go/compute/metadata"
 	"google.golang.org/api/compute/v1"
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 )
