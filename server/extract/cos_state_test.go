@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"io"
 	"math/rand"
+	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/coscel"
@@ -566,4 +567,229 @@ func extendDigestToPCR(tpm io.ReadWriter, algo crypto.Hash, mrIndex int, digest 
 		return err
 	}
 	return tpm2.PCRExtend(tpm, tpmutil.Handle(mrIndex), tpm2Algo, digest, "")
+}
+
+type fakeTEMSlot struct {
+	index  int
+	digest []byte
+}
+
+func (s fakeTEMSlot) Idx() int             { return s.index }
+func (s fakeTEMSlot) Dgst() []byte         { return bytes.Clone(s.digest) }
+func (s fakeTEMSlot) DgstAlg() crypto.Hash { return crypto.SHA384 }
+
+type fakeTEMBank struct {
+	mrType cel.MRType
+	slots  map[int][]byte
+}
+
+func (b fakeTEMBank) CryptoHash() (crypto.Hash, error) { return crypto.SHA384, nil }
+func (b fakeTEMBank) MRType() cel.MRType               { return b.mrType }
+func (b fakeTEMBank) MRs() []register.MR {
+	var mrs []register.MR
+	for idx, dgst := range b.slots {
+		mrs = append(mrs, fakeTEMSlot{index: idx, digest: dgst})
+	}
+	return mrs
+}
+
+type untypedBank struct{}
+
+func (untypedBank) CryptoHash() (crypto.Hash, error) { return crypto.SHA384, nil }
+func (untypedBank) MRs() []register.MR               { return nil }
+
+func extendSHA384(cur, dgst []byte) []byte {
+	h := crypto.SHA384.New()
+	if len(cur) == 0 {
+		cur = make([]byte, crypto.SHA384.Size())
+	}
+	h.Write(cur)
+	h.Write(dgst)
+	return h.Sum(nil)
+}
+
+func TestParsingTEMEventlog(t *testing.T) {
+	acoscel := cel.NewConfComputeMR()
+	var buf bytes.Buffer
+	if err := acoscel.EncodeCEL(&buf); err != nil {
+		t.Fatal(err)
+	}
+
+	bank := fakeTEMBank{
+		mrType: cel.CCMRType,
+		slots: map[int][]byte{
+			coscel.EventTEMSlotIndex: make([]byte, crypto.SHA384.Size()),
+		},
+	}
+
+	for _, b := range []register.MRBank{bank, &bank} {
+		if _, err := ParseCOSCEL(buf.Bytes(), b, Options{}); err != nil {
+			t.Errorf("ParseCOSCEL(empty, %T) = %v, want nil", b, err)
+		}
+	}
+
+	report, gpuEvidenceBytes := testGpuReport(t)
+	events := []struct {
+		eventType coscel.ContentType
+		payload   []byte
+	}{
+		{coscel.ImageRefType, []byte("docker.io/bazel/experimental/test:latest")},
+		{coscel.ImageDigestType, []byte("sha256:781d8dfdd92118436bd914442c8339e653b83f6bf3c1a7a98efcfb7c4fed7483")},
+		{coscel.RestartPolicyType, []byte(attestationpb.RestartPolicy_Always.String())},
+		{coscel.ImageIDType, []byte("sha256:5DF4A1AC347DCF8CF5E9D0ABC04B04DB847D1B88D3B1CC1006F0ACB68E5A1F4B")},
+		{coscel.EnvVarType, []byte("foo=bar")},
+		{coscel.ArgType, []byte("--x")},
+		{coscel.MemoryMonitorType, []byte{1}},
+		{coscel.GpuCCModeType, []byte(attestationpb.GPUDeviceCCMode_ON.String())},
+		{coscel.GPUDeviceAttestationBindingType, gpuEvidenceBytes},
+		{coscel.LaunchSeparatorType, nil},
+	}
+
+	slot2 := make([]byte, crypto.SHA384.Size())
+	for _, ev := range events {
+		cosEvent := coscel.COSTLV{EventType: ev.eventType, EventContent: ev.payload}
+		err := acoscel.AppendEvent(cosEvent, []crypto.Hash{crypto.SHA384}, coscel.EventTEMSlotIndex, func(_ crypto.Hash, mrIndex int, dgst []byte) error {
+			if mrIndex == coscel.EventTEMSlotIndex {
+				slot2 = extendSHA384(slot2, dgst)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	buf.Reset()
+	if err := acoscel.EncodeCEL(&buf); err != nil {
+		t.Fatal(err)
+	}
+	bank.slots[coscel.EventTEMSlotIndex] = slot2
+
+	enabled := true
+	wantState := &attestationpb.AttestedCosState{
+		Container: &attestationpb.ContainerState{
+			ImageReference: "docker.io/bazel/experimental/test:latest",
+			ImageDigest:    "sha256:781d8dfdd92118436bd914442c8339e653b83f6bf3c1a7a98efcfb7c4fed7483",
+			RestartPolicy:  attestationpb.RestartPolicy_Always,
+			ImageId:        "sha256:5DF4A1AC347DCF8CF5E9D0ABC04B04DB847D1B88D3B1CC1006F0ACB68E5A1F4B",
+			EnvVars:        map[string]string{"foo": "bar"},
+			Args:           []string{"--x"},
+		},
+		HealthMonitoring: &attestationpb.HealthMonitoringState{
+			MemoryEnabled: &enabled,
+		},
+		GpuDeviceState: &attestationpb.GpuDeviceState{
+			CcMode:                  attestationpb.GPUDeviceCCMode_ON,
+			NvidiaAttestationReport: report,
+		},
+	}
+
+	gotState, err := ParseCOSCEL(buf.Bytes(), &bank, Options{PopulateGpuDeviceState: true})
+	if err != nil {
+		t.Fatalf("ParseCOSCEL(TEM slot 2) = %v, want nil", err)
+	}
+	if diff := cmp.Diff(gotState, wantState, protocmp.Transform()); diff != "" {
+		t.Errorf("ParseCOSCEL(TEM slot 2) diff (-got +want):\n%s", diff)
+	}
+}
+
+func TestParseCOSCELErrors(t *testing.T) {
+	buildCCMRLog := func(t *testing.T, indices ...int) ([]byte, map[int][]byte) {
+		t.Helper()
+		log := cel.NewConfComputeMR()
+		slots := map[int][]byte{}
+		for _, idx := range indices {
+			ev := coscel.COSTLV{EventType: coscel.ArgType, EventContent: []byte("--arg")}
+			err := log.AppendEvent(ev, []crypto.Hash{crypto.SHA384}, idx, func(_ crypto.Hash, mrIndex int, dgst []byte) error {
+				slots[mrIndex] = extendSHA384(slots[mrIndex], dgst)
+				return nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		var b bytes.Buffer
+		if err := log.EncodeCEL(&b); err != nil {
+			t.Fatal(err)
+		}
+		return b.Bytes(), slots
+	}
+
+	emptyLog, _ := buildCCMRLog(t)
+	idx2Log, idx2Slots := buildCCMRLog(t, coscel.EventTEMSlotIndex)
+	idx4Log, idx4Slots := buildCCMRLog(t, coscel.COSCCELMRIndex)
+	badIdxLog, badIdxSlots := buildCCMRLog(t, 3)
+	mixed42Log, mixed42Slots := buildCCMRLog(t, coscel.COSCCELMRIndex, coscel.EventTEMSlotIndex)
+	mixed24Log, mixed24Slots := buildCCMRLog(t, coscel.EventTEMSlotIndex, coscel.COSCCELMRIndex)
+
+	tests := []struct {
+		name    string
+		log     []byte
+		bank    register.MRBank
+		wantErr string
+	}{
+		{
+			name:    "unknown_mr_type_from_typed_bank",
+			log:     emptyLog,
+			bank:    fakeTEMBank{mrType: cel.MRType(99)},
+			wantErr: "unknown CEL MRType 99",
+		},
+		{
+			name:    "untyped_custom_bank",
+			log:     idx2Log,
+			bank:    untypedBank{},
+			wantErr: "unknown register type",
+		},
+		{
+			name:    "unexpected_ccmr_index_3",
+			log:     badIdxLog,
+			bank:    fakeTEMBank{mrType: cel.CCMRType, slots: badIdxSlots},
+			wantErr: "found unexpected CCELMR 3",
+		},
+		{
+			name: "rtmr_bank_with_tem_index_2",
+			log:  idx2Log,
+			bank: register.RTMRBank{
+				RTMRs: []register.RTMR{
+					{Index: coscel.EventTEMSlotIndex - 1, Digest: idx2Slots[coscel.EventTEMSlotIndex]},
+				},
+			},
+			wantErr: "found unexpected CCELMR 2",
+		},
+		{
+			name:    "tem_bank_with_rtmr_index_4",
+			log:     idx4Log,
+			bank:    fakeTEMBank{mrType: cel.CCMRType, slots: idx4Slots},
+			wantErr: "found unexpected CCELMR 4",
+		},
+		{
+			name:    "mixed_ccmr_indices_4_then_2",
+			log:     mixed42Log,
+			bank:    fakeTEMBank{mrType: cel.CCMRType, slots: mixed42Slots},
+			wantErr: "found unexpected CCELMR 4",
+		},
+		{
+			name:    "mixed_ccmr_indices_2_then_4",
+			log:     mixed24Log,
+			bank:    fakeTEMBank{mrType: cel.CCMRType, slots: mixed24Slots},
+			wantErr: "found unexpected CCELMR 4",
+		},
+		{
+			name: "tem_slot2_replay_mismatch",
+			log:  idx2Log,
+			bank: fakeTEMBank{
+				mrType: cel.CCMRType,
+				slots:  map[int][]byte{coscel.EventTEMSlotIndex: make([]byte, crypto.SHA384.Size())},
+			},
+			wantErr: "CEL replay failed",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := ParseCOSCEL(tc.log, tc.bank, Options{}); err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("ParseCOSCEL(%s, %T) = %v, want error containing %q", tc.name, tc.bank, err, tc.wantErr)
+			}
+		})
+	}
 }
