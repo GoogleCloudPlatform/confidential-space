@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package bmsaiagent;
+
+import "attestation.proto";
+
+option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/bmsaiagent";
+option java_multiple_files = true;
+option java_outer_classname = "BmsaiAgent";
+
+// Service exposed by the BMSAI Attestation Agent over a local Unix socket.
+service BmsaiAttestationService {
+  // MeasureEvent extends a single COS event into Grace TEM 1 (SHA-384 digest)
+  // and dTPM PCR 19 (SHA-256 digest), and appends it to two Canonical Event
+  // Logs (CEL): BmsaiEvidence.cel_launch_event_log (TEM 1) and
+  // TpmQuote.cel_launch_event_log (PCR 19).
+  //
+  // This operation is not idempotent: retrying this request (e.g., in cases
+  // where status != OK) may result in duplicate records in both CELs.
+  rpc MeasureEvent(MeasureEventRequest) returns (MeasureEventResponse) {}
+
+  // Returns combined GB300 platform attestation evidence bound to a challenge.
+  rpc GetEvidence(GetEvidenceRequest) returns (Gb300Evidence) {}
+}
+
+// Request message for MeasureEvent.
+message MeasureEventRequest {
+  // Binary-encoded cel.CosTlv record (Type 80 TLV).
+  bytes cos_event = 1;
+}
+
+// Response message for MeasureEvent.
+message MeasureEventResponse {}
+
+// Request message for GetEvidence.
+message GetEvidenceRequest {
+  // Raw verifier challenge bytes to bind into the attestation evidence.
+  bytes challenge = 1;
+}
+
+// Combined GB300 hardware attestation evidence returned by the agent.
+message Gb300Evidence {
+  // Bare-metal / Grace CPU attestation evidence from BMSAI.
+  BmsaiEvidence bmsai_evidence = 1;
+  // Discrete TPM quote and associated boot/launch event logs.
+  confidential_space.TpmQuote tpm_quote = 2;
+}
+
+// Grace CPU bare-metal attestation evidence: the CMW token and the event logs
+// needed to replay its TEM measurements.
+message BmsaiEvidence {
+  // Raw CBOR-encoded Tag 907 Conceptual Message Wrapper (CMW) bundle with the
+  // Platform Lane (Claim 44234) and Tenant Lane (Claim 44241) tokens.
+  bytes bm_cmw_token = 1;
+  // DRTM / DLME boot event log: binary TCG_PCR_EVENT2 records extended into
+  // TEM Slot 0 (Claim 44238).
+  bytes drtm_boot_event_log = 2;
+  // Container launcher Canonical Event Log: binary cel.CosTlv records whose
+  // SHA-384 digests are extended into Grace TEM 1. Holds container
+  // measurements and boot-time GPU SPDM attestation reports. The matching
+  // dTPM PCR 19 log is TpmQuote.cel_launch_event_log.
+  bytes cel_launch_event_log = 3;
+}
