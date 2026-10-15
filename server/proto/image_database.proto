@@ -31,6 +31,9 @@ message ImageDatabase {
 
     reserved 3, 4;
     reserved "grub_digests", "efi_digests";
+
+    // Reserved for wire compatibility with an internal version of this message.
+    reserved 10, 11, 12;
   }
 
   enum CCKnownCertificates {
