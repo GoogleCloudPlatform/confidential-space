@@ -10,11 +10,22 @@ option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/pr
 message ImageDatabase {
   enum AttributeLabel {
     NIL = 0;
-    TEST = 1;  // test images
+    // Test images, not intended for production use.
+    TEST = 1;
+    // Images that can be used but are not actively maintained or scanned for
+    // vulnerabilities - use at your own risk.
     USABLE = 2;
+    // Images that are actively maintained and scanned for vulnerabilities. All
+    // STABLE images are also USABLE.
     STABLE = 3;
+    // The latest released image. LATEST is also STABLE and USABLE.
     LATEST = 4;
-    EXPERIMENTAL = 5;  // external images that contain experimental features
+    // Images with experimental features. EXPERIMENTAL images have no other
+    // attribute labels.
+    EXPERIMENTAL = 5;
+    // Retired images that are no longer supported. UNSUPPORTED images have
+    // no other attribute labels.
+    UNSUPPORTED = 6;
   }
 
   // Represents values associated with a Confidential Space Image
@@ -27,6 +38,7 @@ message ImageDatabase {
     repeated AttributeLabel attribute_labels = 9;
     // Explicitly marks the CS Image as retired. If this field is true,
     // attestation validations for the corresponding CS image should fail.
+    // True for images with the UNSUPPORTED attribute label.
     bool deprecated = 7;
 
     reserved 3, 4;

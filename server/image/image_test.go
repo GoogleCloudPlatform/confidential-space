@@ -2,6 +2,7 @@ package image
 
 import (
 	"crypto/x509"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -411,5 +412,29 @@ func buildGoldenEntry(releaseName string, hardened bool, imageBaseVersion uint32
 		ImageBaseVersion: imageBaseVersion,
 		Swversion:        swversion,
 		AttributeLabels:  labels,
+	}
+}
+
+func TestValidate_UnsupportedImage_ReturnsError(t *testing.T) {
+	db := &rimpb.ImageDatabase{
+		GoldenValues: map[string]*rimpb.ImageDatabase_ImageGoldenEntry{
+			"unsupported_cmdline": buildGoldenEntry("unsupported_cmdline", false, 3, 1234,
+				rimpb.ImageDatabase_UNSUPPORTED,
+			),
+		},
+	}
+
+	ms := &attestpb.MachineState{
+		LinuxKernel: &attestpb.LinuxKernelState{
+			CommandLine: "unsupported_cmdline",
+		},
+	}
+
+	_, err := Validate(ms, db)
+	if err == nil {
+		t.Fatalf("Expected error from Validate(), got nil")
+	}
+	if !errors.Is(err, ErrUnsupportedImage) {
+		t.Errorf("Validate() returned unexpected error: %v, want %q", err, "image is no longer supported")
 	}
 }
