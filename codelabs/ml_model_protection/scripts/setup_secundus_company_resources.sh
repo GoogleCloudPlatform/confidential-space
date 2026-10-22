@@ -24,4 +24,4 @@ echo "Creating result storage bucket "${SECUNDUS_RESULT_STORAGE_BUCKET}" for sto
 create_storage_bucket "${SECUNDUS_RESULT_STORAGE_BUCKET}"
 
 echo "Uploading the sample images to storage bucket "${SECUNDUS_INPUT_STORAGE_BUCKET}" ..."
-gsutil cp "${PARENT_DIR}"/artifacts/sample_images/* gs://"${SECUNDUS_INPUT_STORAGE_BUCKET}"/
+gcloud storage cp "${PARENT_DIR}"/artifacts/sample_images/* gs://"${SECUNDUS_INPUT_STORAGE_BUCKET}"/
