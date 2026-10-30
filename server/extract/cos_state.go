@@ -22,20 +22,32 @@ type Options struct {
 	HostPCR bool
 }
 
+// mrTypedBank is an optional interface implemented by MRBank types that specify their CEL MRType.
+type mrTypedBank interface {
+	register.MRBank
+	MRType() cel.MRType
+}
+
 // ParseCOSCEL takes an encoded Attested COS CEL and MR bank, replays the CEL against the MRs,
 // and returns the AttestedCosState.
 func ParseCOSCEL(cosEventLog []byte, p register.MRBank, opts Options) (*pb.AttestedCosState, error) {
-	switch p.(type) {
+	switch b := p.(type) {
 	case register.PCRBank:
-		return getCOSStateFromCEL(cosEventLog, p, cel.PCRType, opts)
+		return getCOSStateFromCEL(cosEventLog, p, cel.PCRType, 0, opts)
 	case register.RTMRBank:
-		return getCOSStateFromCEL(cosEventLog, p, cel.CCMRType, opts)
+		return getCOSStateFromCEL(cosEventLog, p, cel.CCMRType, coscel.COSCCELMRIndex, opts)
+	case mrTypedBank:
+		mrType := b.MRType()
+		if mrType != cel.CCMRType {
+			return nil, fmt.Errorf("unknown CEL MRType %d from %T", mrType, p)
+		}
+		return getCOSStateFromCEL(cosEventLog, p, cel.CCMRType, coscel.EventTEMSlotIndex, opts)
 	default:
 		return nil, fmt.Errorf("unknown register type %T", p)
 	}
 }
 
-func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, trustingRegisterType cel.MRType, opts Options) (*pb.AttestedCosState, error) {
+func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, trustingRegisterType cel.MRType, expectedCCMRIndex uint8, opts Options) (*pb.AttestedCosState, error) {
 	decodedCEL, err := cel.DecodeToCEL(bytes.NewBuffer(rawCanonicalEventLog))
 	if err != nil {
 		return nil, err
@@ -45,7 +57,7 @@ func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, t
 		return nil, err
 	}
 
-	cosState, err := VerifiedCOSState(decodedCEL, uint8(trustingRegisterType), opts)
+	cosState, err := verifiedCOSState(decodedCEL, uint8(trustingRegisterType), expectedCCMRIndex, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +67,10 @@ func getCOSStateFromCEL(rawCanonicalEventLog []byte, register register.MRBank, t
 
 // VerifiedCOSState returns the AttestedCosState from the given event log.
 func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.AttestedCosState, error) {
+	return verifiedCOSState(eventLog, registerType, coscel.COSCCELMRIndex, opts)
+}
+
+func verifiedCOSState(eventLog cel.CEL, registerType uint8, expectedCCMRIndex uint8, opts Options) (*pb.AttestedCosState, error) {
 	cosState := &pb.AttestedCosState{}
 	cosState.Container = &pb.ContainerState{}
 	cosState.HealthMonitoring = &pb.HealthMonitoringState{}
@@ -80,7 +96,7 @@ func VerifiedCOSState(eventLog cel.CEL, registerType uint8, opts Options) (*pb.A
 				return nil, fmt.Errorf("found unexpected PCR %d in COS CEL log", record.Index)
 			}
 		case cel.CCMRType:
-			if record.Index != coscel.COSCCELMRIndex {
+			if record.Index != expectedCCMRIndex {
 				return nil, fmt.Errorf("found unexpected CCELMR %d in COS CEL log", record.Index)
 			}
 		default:
