@@ -3,6 +3,7 @@ syntax = "proto3";
 package image_database;
 
 import "google/protobuf/timestamp.proto";
+import "proto/state.proto";  // github.com/google/go-eventlog, for state.HashAlgo
 import "proto/attest.proto";
 
 option go_package = "github.com/GoogleCloudPlatform/confidential-space/server/proto/gen/image_database";
@@ -29,8 +30,39 @@ message ImageDatabase {
     // attestation validations for the corresponding CS image should fail.
     bool deprecated = 7;
 
+    // Golden values of measurement registers of this image release. At most one
+    // entry per (register_type, register_index, hash_algo). If a register has
+    // no entry, no golden values are published for it.
+    repeated RegisterDigests register_digests = 10;
+
     reserved 3, 4;
     reserved "grub_digests", "efi_digests";
+  }
+
+  // Type of a measurement register.
+  enum RegisterType {
+    REGISTER_TYPE_UNSPECIFIED = 0;
+    REGISTER_TYPE_PCR = 1;   // TPM Platform Configuration Register
+    REGISTER_TYPE_RTMR = 2;  // Intel TDX Runtime Measurement Register
+  }
+
+  // Golden values of one measurement register in one hash bank.
+  message RegisterDigests {
+    RegisterType register_type = 1;
+
+    // The PCR index (e.g. 8 for PCR8) or the RTMR index as reported in the TD
+    // quote (e.g. 2 for RTMR[2]). For RTMRs, this is not the CC MR index used
+    // in the CC event log, which is the RTMR index + 1.
+    uint32 register_index = 2;
+
+    // Hash algorithm of the register bank. RTMRs always use SHA384.
+    state.HashAlgo hash_algo = 3;
+
+    // Lowercase hex encodings (no "0x" prefix) of the values of this register
+    // after known-good boots of this image release. A register value matches
+    // if it equals any of them. The order and the number of values are not
+    // significant and may change.
+    repeated string digests = 4;
   }
 
   enum CCKnownCertificates {
