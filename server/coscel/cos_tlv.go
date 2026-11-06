@@ -29,6 +29,9 @@ const (
 	EventRTMRIndex = 3
 	// COSCCELMRIndex is the CCMR index to use in eventlog for COS events.
 	COSCCELMRIndex = 4
+	// EventTEMSlotIndex is the CCMR index for Grace TEM 1, where the container
+	// launch log goes on BMSAI (not an RTMR index).
+	EventTEMSlotIndex = 2
 )
 
 // ContentType represent a COS content type in a CEL record content.
