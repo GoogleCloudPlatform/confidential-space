@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/confidential-space/server/image/data"
@@ -14,11 +15,18 @@ import (
 	attestpb "github.com/google/go-tpm-tools/proto/attest"
 )
 
+// ErrUnsupportedImage is returned when the image is no longer supported.
+var ErrUnsupportedImage = errors.New("image is no longer supported")
+
 // Validate validates the machinestate against image RIMs. If successful, returns the associated golden values.
 func Validate(machineState *attestpb.MachineState, imageDb *rimpb.ImageDatabase) (*rimpb.ImageDatabase_ImageGoldenEntry, error) {
 	goldens, err := GetGoldenValues(machineState, imageDb)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get golden values: %v", err)
+	}
+
+	if slices.Contains(goldens.GetAttributeLabels(), rimpb.ImageDatabase_UNSUPPORTED) {
+		return nil, fmt.Errorf("%w - please use the latest image instead, see https://docs.cloud.google.com/confidential-computing/confidential-space/docs/confidential-space-images", ErrUnsupportedImage)
 	}
 
 	if err := validateBaseValues(machineState.GetSecureBoot(), goldens.GetImageBaseVersion(), imageDb); err != nil {
