@@ -48,6 +48,10 @@ func VerifyACPIDataAgainstLog(acpiData *attestpb.AcpiData, fls *elpb.FirmwareLog
 		extractedDigests[digestHex] = field.name
 	}
 
+	if len(extractedDigests) != len(fields) {
+		return fmt.Errorf("duplicate AcpiData fields: table_loader, rsdp, and tables must be distinct")
+	}
+
 	activeExpectedCount := len(extractedDigests)
 
 	acpiEventCount := 0
