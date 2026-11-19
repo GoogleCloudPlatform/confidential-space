@@ -203,4 +203,32 @@ func TestVerifyACPIData(t *testing.T) {
 			t.Errorf("VerifyACPIDataAgainstLog(%v, %v) = %v, want nil with unrelated events present", mockACPIData, extState, err)
 		}
 	})
+
+	t.Run("FailureDuplicateAcpiDataFields", func(t *testing.T) {
+		mockACPIData := &attestpb.AcpiData{
+			Rsdp:        mockLoader,
+			Tables:      mockTables,
+			TableLoader: mockLoader,
+		}
+
+		extState := &elpb.FirmwareLogState{
+			Hash: elpb.HashAlgo_SHA384,
+			RawEvents: []*elpb.Event{
+				{
+					UntrustedType: 0xA,
+					Data:          acpiLabel,
+					Digest:        loaderDigest,
+				},
+				{
+					UntrustedType: 0xA,
+					Data:          acpiLabel,
+					Digest:        tablesDigest,
+				},
+			},
+		}
+
+		if err := VerifyACPIDataAgainstLog(mockACPIData, extState); err == nil {
+			t.Errorf("VerifyACPIDataAgainstLog(%v, %v) = nil, want error due to duplicate AcpiData fields", mockACPIData, extState)
+		}
+	})
 }
