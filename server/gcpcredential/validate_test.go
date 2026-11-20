@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -146,6 +147,34 @@ func TestValidateFailsWithInvalidToken(t *testing.T) {
 	// ValidateWithJWKS.
 	if _, err := ValidateWithJWKS(jwks, []string{"fake.test.token"}, testAudience); err == nil {
 		t.Errorf("ValidateWithJWKS returned successfully, expected error")
+	}
+}
+
+func TestValidateFailsWithOversizedToken(t *testing.T) {
+	signer, jwk := testRSASigner(t, testKeyID)
+	jwks := &JWKS{[]JWK{jwk}}
+
+	// Correctly signed, so the token is only rejected because of its size.
+	claims := &emailClaims{Email: strings.Repeat("a", maxTokenLen) + "@test.com", EmailVerified: true}
+	tokens := []string{testGCPCredential(t, claims, testAudience, testKeyID, signer)}
+
+	// Returns a hardcoded JWK for token validation.
+	validatorClient := &http.Client{Transport: &jwkFetcher{jwkFetchFunc(t, jwks)}}
+	validatorOpts := []idtoken.ClientOption{
+		option.WithoutAuthentication(),
+		option.WithHTTPClient(validatorClient),
+	}
+
+	if emails, err := Validate(t.Context(), validatorClient, tokens, testAudience); err == nil {
+		t.Errorf("Validate with a %d byte token returned %d emails and no error, want error", len(tokens[0]), len(emails))
+	}
+
+	if emails, err := ValidateWithOptions(t.Context(), tokens, testAudience, validatorOpts); err == nil {
+		t.Errorf("ValidateWithOptions with a %d byte token returned %d emails and no error, want error", len(tokens[0]), len(emails))
+	}
+
+	if emails, err := ValidateWithJWKS(jwks, tokens, testAudience); err == nil {
+		t.Errorf("ValidateWithJWKS with a %d byte token returned %d emails and no error, want error", len(tokens[0]), len(emails))
 	}
 }
 

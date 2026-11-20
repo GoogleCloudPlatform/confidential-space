@@ -214,9 +214,19 @@ func ValidateWithJWKS(jwks *JWKS, credentials []string, expectedAudience string)
 
 type validationFunc func(token string) (map[string]any, error)
 
+// maxTokenLen is the largest ID token, in bytes, that is passed to a validator.
+// Google-issued ID tokens carry a small, fixed set of claims and are around
+// 1 KB, so valid tokens stay far below this limit.
+const maxTokenLen = 16 * 1024
+
 func validateAndParse(credentials []string, validator validationFunc) ([]string, error) {
 	var emails []string
 	for i, token := range credentials {
+		// Check the size before parsing: the validators split the whole token.
+		if len(token) > maxTokenLen {
+			return nil, fmt.Errorf("Error validating token in position %v: token is %d bytes, the limit is %d", i, len(token), maxTokenLen)
+		}
+
 		claims, err := validator(token)
 		if err != nil {
 			return nil, fmt.Errorf("Error validating token in position %v: %v", i, err)
