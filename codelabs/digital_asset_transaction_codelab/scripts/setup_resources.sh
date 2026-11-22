@@ -42,15 +42,15 @@ gcloud kms encrypt \
     --key=projects/"${PRIMUS_PROJECT_ID}"/locations/"${PRIMUS_PROJECT_LOCATION}"/keyRings/"${PRIMUS_KEYRING}"/cryptoKeys/"${PRIMUS_KEY}"
 
 echo "Uploading the encrypted file to storage bucket ${PRIMUS_INPUT_STORAGE_BUCKET}"
-gsutil cp "${PARENT_DIR}"/artifacts/alice_encrypted_key_share gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"/alice_encrypted_key_share
-gsutil cp "${PARENT_DIR}"/artifacts/bob_encrypted_key_share gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"/bob_encrypted_key_share
+gcloud storage cp "${PARENT_DIR}"/artifacts/alice_encrypted_key_share gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"/alice_encrypted_key_share
+gcloud storage cp "${PARENT_DIR}"/artifacts/bob_encrypted_key_share gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"/bob_encrypted_key_share
 
 echo "Creating service-account ${PRIMUS_SERVICEACCOUNT} ..."
 create_service_account "${PRIMUS_SERVICEACCOUNT}"
 
-gsutil iam ch \
-  serviceAccount:"${PRIMUS_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com:objectViewer \
-  gs://"${PRIMUS_INPUT_STORAGE_BUCKET}"
+gcloud storage buckets add-iam-policy-binding gs://"${PRIMUS_INPUT_STORAGE_BUCKET}" \
+  --member=serviceAccount:"${PRIMUS_SERVICEACCOUNT}"@"${PRIMUS_PROJECT_ID}".iam.gserviceaccount.com \
+  --role=roles/storage.objectViewer
 
 echo "Granting KMS decryptor role to the service-account ${PRIMUS_SERVICEACCOUNT} ..."
 gcloud kms keys add-iam-policy-binding \
