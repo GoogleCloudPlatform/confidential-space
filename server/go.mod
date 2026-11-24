@@ -3,7 +3,7 @@ module github.com/GoogleCloudPlatform/confidential-space/server
 go 1.26.2
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-configfs-tsm v0.3.3
